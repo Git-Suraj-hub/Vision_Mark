@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard</title>
+  <link rel="icon" type="image/png" href="/static/images/favicon.png">
+  <link href="/static/css/style.css" rel="stylesheet">
+  <style>
+    @keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+  </style>
+</head>
+<body class="dashboard-page">
+  <div class="logo-background"></div>
+  
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <img src="/static/images/logo.png" alt="Logo" class="navbar-logo">
+      <span>Attendance System</span>
+    </div>
+    <div class="navbar-user">
+      <span id="welcome"></span>
+      <button id="logoutBtn" class="btn btn-small btn-danger">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container dashboard-container">
+    <div class="dashboard-header">
+      <h2>👨‍🏫 Teacher Dashboard</h2>
+      <p class="subtitle" id="subjectInfo">Managing your subject</p>
+    </div>
+
+    <!-- Current Class Info -->
+    <div class="card current-class-card" id="currentClassCard">
+      <h3>🎯 Current Class</h3>
+      <div id="currentClassInfo" class="current-class-info">
+        <p class="loading-text">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="card control-panel">
+      <h3>🎬 Recognition Controls</h3>
+      <div class="controls-grid">
+        <button id="startBtn" class="btn btn-success btn-large">
+          <span class="btn-icon">▶️</span>
+          <span>Start Recognition</span>
+        </button>
+        <button id="stopBtn" class="btn btn-danger btn-large">
+          <span class="btn-icon">⏹️</span>
+          <span>Stop Recognition</span>
+        </button>
+        <button id="refreshBtn" class="btn btn-secondary btn-large">
+          <span class="btn-icon">🔄</span>
+          <span>Refresh Data</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Image Upload for Testing -->
+    <div class="card">
+      <h3>🖼️ Test Face Recognition</h3>
+      <div class="upload-section">
+        <form id="uploadForm">
+          <div class="file-upload">
+            <input type="file" id="imageFile" accept="image/*" required>
+            <label for="imageFile" class="file-label">
+              <span class="file-icon">📁</span>
+              <span class="file-text">Choose Image</span>
+            </label>
+            <span id="fileName" class="file-name"></span>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <span>🔍 Test Recognition</span>
+          </button>
+        </form>
+        <div id="testResults" class="test-results"></div>
+      </div>
+    </div>
+
+    <!-- Recent Recognitions -->
+    <div class="card">
+      <div class="card-header">
+        <h3>🎯 Recent Recognitions</h3>
+        <span class="badge" id="recentCount">0</span>
+      </div>
+      <div id="recentRecognitions" class="recognition-list">
+        <p class="no-data">No recognitions yet. Start webcam to begin.</p>
+      </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid" id="statsGrid">
+      <!-- Will be populated -->
+    </div>
+
+    <!-- Manual Attendance Marking -->
+    <div class="card">
+      <h3>✏️ Manual Attendance Marking</h3>
+      <form id="markForm" class="mark-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="m_enroll">Enrollment Number</label>
+            <input id="m_enroll" type="text" placeholder="Enter enrollment no" required>
+          </div>
+          <div class="form-group">
+            <label for="m_status">Status</label>
+            <select id="m_status">
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="Late">Late</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">✅ Mark Attendance</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 id="tableTitle">📋 Attendance Records</h3>
+      </div>
+      <div class="table-container">
+        <table id="allTable">
+          <thead>
+            <tr>
+              <th>Enrollment</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Method</th>
+              <th>Confidence</th>
+              <th>Image</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="noData" class="no-data" style="display:none;">
+          <p>No attendance records found</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let recognitionInterval = null;
+
+    async function loadUserData() {
+      const u = await (await fetch('/api/current_user')).json();
+      if(!u.user || u.user.role !== 'teacher') {
+        location.href = '/login/teacher';
+        return;
+      }
+      currentUser = u.user;
+      document.getElementById('welcome').innerText = `Welcome, ${currentUser.name || currentUser.username}`;
+      
+      if (currentUser.subject) {
+        document.getElementById('subjectInfo').textContent = `Managing: ${currentUser.subject}`;
+        document.getElementById('tableTitle').textContent = `📋 ${currentUser.subject} - Attendance Records`;
+      }
+      
+      await loadCurrentClass();
+      await loadAttendance();
+      startRecognitionPolling();
+    }
+
+    async function loadCurrentClass() {
+      try {
+        const res = await fetch('/api/current_subject');
+        const data = await res.json();
+        const infoDiv = document.getElementById('currentClassInfo');
+        
+        if (data.success) {
+          const isMySubject = currentUser.subject === data.subject;
+          infoDiv.innerHTML = `
+            <div class="class-info ${isMySubject ? 'my-class' : 'other-class'}">
+              <div class="class-row">
+                <span class="class-label">Subject:</span>
+                <span class="class-value">${data.subject}</span>
+                ${isMySubject ? '<span class="my-badge">Your Class</span>' : ''}
+              </div>
+              <div class="class-row">
+                <span class="class-label">Time:</span>
+                <span class="class-value">${data.start_time} - ${data.end_time}</span>
+              </div>
+              ${data.teacher ? `<div class="class-row">
+                <span class="class-label">Teacher:</span>
+                <span class="class-value">${data.teacher}</span>
+              </div>` : ''}
+              ${data.room ? `<div class="class-row">
+                <span class="class-label">Room:</span>
+                <span class="class-value">${data.room}</span>
+              </div>` : ''}
+            </div>
+          `;
+          
+          // Show warning if not teacher's subject
+          if (!isMySubject) {
+            infoDiv.innerHTML += `
+              <div class="warning-message">
+                ⚠️ This is not your subject. You can only mark attendance for: <strong>${currentUser.subject}</strong>
+              </div>
+            `;
+          }
+        } else {
+          infoDiv.innerHTML = '<p class="no-class">📅 No class running currently</p>';
+        }
+      } catch (error) {
+        console.error('Error loading current class:', error);
+      }
+    }
+
+    async function loadAttendance() {
+      try {
+        const res = await fetch('/api/teacher/attendance');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderStatistics(data.statistics);
+          renderAttendanceTable(data.records);
+        }
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+      }
+    }
+
+    function renderStatistics(stats) {
+      const statsGrid = document.getElementById('statsGrid');
+      statsGrid.innerHTML = '';
+
+      const statCards = [
+        { label: 'Total Students', value: stats.total_students || 0, icon: '👥', color: '#4CAF50' },
+        { label: 'Total Attendance', value: stats.total_attendance || 0, icon: '✅', color: '#2196F3' },
+        { label: 'Days Tracked', value: stats.total_days || 0, icon: '📅', color: '#FF9800' }
+      ];
+
+      statCards.forEach(stat => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.style.borderLeft = `4px solid ${stat.color}`;
+        card.innerHTML = `
+          <div class="stat-icon">${stat.icon}</div>
+          <div class="stat-content">
+            <div class="stat-value">${stat.value}</div>
+            <div class="stat-label">${stat.label}</div>
+          </div>
+        `;
+        statsGrid.appendChild(card);
+      });
+    }
+
+    function renderAttendanceTable(records) {
+      const tbody = document.querySelector('#allTable tbody');
+      const noData = document.getElementById('noData');
+      
+      tbody.innerHTML = '';
+      
+      if (records.length === 0) {
+        noData.style.display = 'block';
+        return;
+      }
+
+      noData.style.display = 'none';
+      
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        const statusClass = r.status === 'Present' ? 'status-present' : 'status-absent';
+        const methodClass = r.recognized_by === 'auto_face' ? 'method-auto' : 'method-manual';
+        const confidence = (r.confidence * 100).toFixed(0);
+        
+        tr.innerHTML = `
+          <td>${r.enrollment_no}</td>
+          <td>${r.name}</td>
+          <td>${r.date}</td>
+          <td>${r.time}</td>
+          <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+          <td><span class="method-badge ${methodClass}">${r.recognized_by === 'auto_face' ? '🤖 Auto' : '✏️ Manual'}</span></td>
+          <td>${confidence}%</td>
+          <td>${r.image_path ? `<a href="/static/${r.image_path}" target="_blank" class="view-image">View</a>` : '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function startRecognitionPolling() {
+      recognitionInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/recent_recognitions');
+          const data = await res.json();
+          renderRecentRecognitions(data.recognitions);
+        } catch (error) {
+          console.error('Error fetching recognitions:', error);
+        }
+      }, 3000); // Poll every 3 seconds
+    }
+
+    function renderRecentRecognitions(recognitions) {
+      const container = document.getElementById('recentRecognitions');
+      const countBadge = document.getElementById('recentCount');
+      
+      countBadge.textContent = recognitions.length;
+      
+      if (recognitions.length === 0) {
+        container.innerHTML = '<p class="no-data">No recognitions yet. Start webcam to begin.</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      recognitions.reverse().forEach(rec => {
+        const item = document.createElement('div');
+        item.className = 'recognition-item';
+        item.innerHTML = `
+          <div class="rec-info">
+            <div class="rec-name">${rec.name}</div>
+            <div class="rec-details">
+              <span>🆔 ${rec.enrollment_no}</span>
+              <span>📚 ${rec.subject}</span>
+              <span>⏰ ${rec.time}</span>
+              <span>🎯 ${(rec.confidence * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+          ${rec.image_path ? `<img src="/static/${rec.image_path}" alt="Face" class="rec-image">` : ''}
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Event Listeners
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('startBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Starting...';
+      
+      try {
+        const res = await fetch('/api/start_webcam', {method:'POST'});
+        const data = await res.json();
+        
+        if (data.success) {
+          alert('✅ ' + data.msg);
+          await loadCurrentClass();
+        } else {
+          alert('❌ ' + data.msg);
+        }
+      } catch (error) {
+        alert('❌ Error starting webcam');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">▶️</span><span>Start Recognition</span>';
+      }
+    });
+
+    document.getElementById('stopBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('stopBtn');
+      btn.disabled = true;
+      
+      try {
+        const res = await fetch('/api/stop_webcam');
+        const data = await res.json();
+        
+        if (data.success) {
+          alert('✅ ' + data.msg);
+        } else {
+          alert('❌ ' + data.msg);
+        }
+      } catch (error) {
+        alert('❌ Error stopping webcam');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      await loadCurrentClass();
+      await loadAttendance();
+    });
+
+    // ============================================
+// UPDATED: Manual Attendance Marking Section
+// Add this to replace the existing manual marking code in teacher.html
+// ============================================
+
+document.getElementById('markForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const enrollBtn = e.target.querySelector('button[type="submit"]');
+  const enroll = document.getElementById('m_enroll').value.trim();
+  const status = document.getElementById('m_status').value;
+  
+  // Disable button during processing
+  enrollBtn.disabled = true;
+  enrollBtn.innerHTML = '<span class="loading"></span> Marking...';
+  
+  const form = new FormData();
+  form.append('enrollment_no', enroll);
+  form.append('status', status);
+  
+  try {
+    const res = await fetch('/api/mark_attendance', {method:'POST', body: form});
+    const data = await res.json();
+    
+    if(data.success) {
+      // ✅ SUCCESS - Show detailed message
+      showNotification('success', data.msg);
+      
+      // Clear form
+      document.getElementById('m_enroll').value = '';
+      
+      // Refresh attendance table
+      await loadAttendance();
+      
+    } else {
+      // ❌ ERROR - Show detailed error message
+      if (data.already_marked) {
+        // Special handling for duplicate marking
+        showNotification('warning', data.msg);
+      } else if (data.current_subject && data.teacher_subject) {
+        // Special handling for subject mismatch
+        showNotification('error', data.msg);
+      } else {
+        // Generic error
+        showNotification('error', data.msg);
+      }
+    }
+    
+  } catch (error) {
+    showNotification('error', '❌ Connection error. Please try again.');
+  } finally {
+    // Re-enable button
+    enrollBtn.disabled = false;
+    enrollBtn.innerHTML = '<span>✅ Mark Attendance</span>';
+  }
+});
+
+// ============================================
+// NEW: Notification Function (Add this to teacher.html)
+// ============================================
+function showNotification(type, message) {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease;
+  `;
+  
+  // Color based on type
+  const colors = {
+    'success': { bg: '#d4edda', border: '#28a745', text: '#155724' },
+    'error': { bg: '#f8d7da', border: '#dc3545', text: '#721c24' },
+    'warning': { bg: '#fff3cd', border: '#ffc107', text: '#856404' }
+  };
+  
+  const color = colors[type] || colors['error'];
+  notification.style.background = color.bg;
+  notification.style.borderLeft = `4px solid ${color.border}`;
+  notification.style.color = color.text;
+  
+  // Icon based on type
+  const icons = {
+    'success': '✅',
+    'error': '❌',
+    'warning': '⚠️'
+  };
+  
+  notification.innerHTML = `
+    <div style="display: flex; gap: 15px; align-items: start;">
+      <div style="font-size: 24px;">${icons[type]}</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; margin-bottom: 5px;">${type.toUpperCase()}</div>
+        <div style="white-space: pre-wrap; line-height: 1.5;">${message}</div>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" 
+              style="background: none; border: none; font-size: 20px; cursor: pointer; color: ${color.text};">
+        ×
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOutRight 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// ============================================
+// Add CSS animations (Add to <style> in head)
+// ============================================
+/*
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+*/
+
+// ============================================
+// ENHANCED: Show current class info on page load
+// ============================================
+async function loadCurrentClass() {
+  try {
+    const res = await fetch('/api/current_subject');
+    const data = await res.json();
+    const infoDiv = document.getElementById('currentClassInfo');
+    
+    if (data.success) {
+      const isMySubject = currentUser.subject === data.subject;
+      
+      infoDiv.innerHTML = `
+        <div class="class-info ${isMySubject ? 'my-class' : 'other-class'}">
+          <div class="class-row">
+            <span class="class-label">Subject:</span>
+            <span class="class-value">${data.subject}</span>
+            ${isMySubject ? '<span class="my-badge">✅ Your Class</span>' : '<span class="other-badge">❌ Not Your Class</span>'}
+          </div>
+          <div class="class-row">
+            <span class="class-label">Time:</span>
+            <span class="class-value">${data.start_time} - ${data.end_time}</span>
+          </div>
+          ${data.teacher ? `<div class="class-row">
+            <span class="class-label">Teacher:</span>
+            <span class="class-value">${data.teacher}</span>
+          </div>` : ''}
+          ${data.room ? `<div class="class-row">
+            <span class="class-label">Room:</span>
+            <span class="class-value">${data.room}</span>
+          </div>` : ''}
+        </div>
+      `;
+      
+      // Show warning if not teacher's subject
+      if (!isMySubject) {
+        infoDiv.innerHTML += `
+          <div class="warning-message">
+            <strong>⚠️ IMPORTANT:</strong><br>
+            You can only mark attendance for your subject: <strong>${currentUser.subject}</strong><br>
+            Current class is: <strong>${data.subject}</strong>
+          </div>
+        `;
+      } else {
+        infoDiv.innerHTML += `
+          <div class="success-message">
+            ✅ You can mark attendance for this class
+          </div>
+        `;
+      }
+    } else {
+      infoDiv.innerHTML = `
+        <p class="no-class">📅 No class running currently</p>
+        <div class="info-message">
+          Your subject: <strong>${currentUser.subject}</strong><br>
+          You can only mark attendance when your class is running.
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading current class:', error);
+  }
+}
+
+    // Image upload
+    document.getElementById('imageFile').addEventListener('change', (e) => {
+      const fileName = e.target.files[0]?.name || '';
+      document.getElementById('fileName').textContent = fileName;
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('imageFile');
+      const resultsDiv = document.getElementById('testResults');
+      
+      if (!fileInput.files[0]) {
+        alert('Please select an image');
+        return;
+      }
+      
+      resultsDiv.innerHTML = '<p class="loading-text">Processing...</p>';
+      
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      
+      try {
+        const res = await fetch('/api/test_image', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          let html = `<div class="test-result-success">
+            <p><strong>✅ Faces Detected:</strong> ${data.faces_detected}</p>
+            <img src="${data.result_image}" alt="Result" class="result-image">
+            <div class="recognition-results">`;
+          
+          data.results.forEach((r, i) => {
+            html += `<div class="result-item">
+              <strong>Face ${i+1}:</strong>
+              ${r.recognized ? 
+                `<span class="recognized">✅ ${r.name} (${r.enrollment_no}) - ${(r.similarity*100).toFixed(1)}%</span>` :
+                `<span class="not-recognized">❌ Unknown - ${(r.similarity*100).toFixed(1)}%</span>`
+              }
+            </div>`;
+          });
+          
+          html += '</div></div>';
+          resultsDiv.innerHTML = html;
+        } else {
+          resultsDiv.innerHTML = `<p class="error-text">❌ ${data.msg}</p>`;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = '<p class="error-text">❌ Error processing image</p>';
+      }
+      
+      fileInput.value = '';
+      document.getElementById('fileName').textContent = '';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (recognitionInterval) clearInterval(recognitionInterval);
+      await fetch('/api/logout', {method:'POST'});
+      location.href = '/';
+    });
+
+    // Initialize
+    loadUserData();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (recognitionInterval) clearInterval(recognitionInterval);
+    });
+  </script>
+</body>
+</html>

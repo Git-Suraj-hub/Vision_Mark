@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link rel="icon" type="image/png" href="/static/images/favicon.png">
+  <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="dashboard-page">
+  <div class="logo-background"></div>
+  
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <img src="/static/images/logo.png" alt="Logo" class="navbar-logo">
+      <span>Attendance System</span>
+    </div>
+    <div class="navbar-user">
+      <span id="welcome"></span>
+      <button id="logoutBtn" class="btn btn-small btn-danger">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container dashboard-container">
+    <div class="dashboard-header">
+      <h2>📊 My Attendance Dashboard</h2>
+      <p class="subtitle">Track your attendance across all subjects</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid" id="statsGrid">
+      <!-- Will be populated dynamically -->
+    </div>
+
+    <!-- Subject Tabs -->
+    <div class="subject-tabs" id="subjectTabs">
+      <!-- Will be populated dynamically -->
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 id="currentSubjectTitle">All Attendance</h3>
+        <button id="refreshBtn" class="btn btn-small btn-secondary">🔄 Refresh</button>
+      </div>
+      <div class="table-container">
+        <table id="attTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Confidence</th>
+              <th>Image</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="noData" class="no-data" style="display:none;">
+          <p>No attendance records found</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let allAttendance = {};
+    let currentSubject = 'all';
+
+    async function loadUserData() {
+      const u = await (await fetch('/api/current_user')).json();
+      if(!u.user || u.user.role !== 'student') {
+        location.href = '/login/student';
+        return;
+      }
+      currentUser = u.user;
+      document.getElementById('welcome').innerText = `Welcome, ${currentUser.name || currentUser.username}`;
+      
+      await loadAttendance();
+    }
+
+    async function loadAttendance() {
+      try {
+        const res = await fetch(`/api/student/attendance/${currentUser.enrollment_no}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          allAttendance = data.attendance;
+          renderStatistics();
+          renderSubjectTabs();
+          renderAttendanceTable();
+        }
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+      }
+    }
+
+    function renderStatistics() {
+      const statsGrid = document.getElementById('statsGrid');
+      statsGrid.innerHTML = '';
+
+      let totalPresent = 0;
+      let totalClasses = 0;
+
+      Object.keys(allAttendance).forEach(subject => {
+        const records = allAttendance[subject];
+        totalPresent += records.filter(r => r.status === 'Present').length;
+        totalClasses += records.length;
+      });
+
+      const percentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : 0;
+
+      const stats = [
+        { label: 'Total Classes', value: totalClasses, icon: '📚', color: '#4CAF50' },
+        { label: 'Present', value: totalPresent, icon: '✅', color: '#2196F3' },
+        { label: 'Attendance %', value: percentage + '%', icon: '📊', color: '#FF9800' }
+      ];
+
+      stats.forEach(stat => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.style.borderLeft = `4px solid ${stat.color}`;
+        card.innerHTML = `
+          <div class="stat-icon">${stat.icon}</div>
+          <div class="stat-content">
+            <div class="stat-value">${stat.value}</div>
+            <div class="stat-label">${stat.label}</div>
+          </div>
+        `;
+        statsGrid.appendChild(card);
+      });
+    }
+
+    function renderSubjectTabs() {
+      const tabsContainer = document.getElementById('subjectTabs');
+      tabsContainer.innerHTML = '';
+
+      const allTab = document.createElement('button');
+      allTab.className = 'subject-tab active';
+      allTab.textContent = 'All Subjects';
+      allTab.onclick = () => selectSubject('all');
+      tabsContainer.appendChild(allTab);
+
+      Object.keys(allAttendance).forEach(subject => {
+        if (allAttendance[subject].length > 0) {
+          const tab = document.createElement('button');
+          tab.className = 'subject-tab';
+          tab.textContent = subject;
+          tab.onclick = () => selectSubject(subject);
+          tabsContainer.appendChild(tab);
+        }
+      });
+    }
+
+    function selectSubject(subject) {
+      currentSubject = subject;
+      
+      // Update active tab
+      document.querySelectorAll('.subject-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if ((subject === 'all' && tab.textContent === 'All Subjects') ||
+            tab.textContent === subject) {
+          tab.classList.add('active');
+        }
+      });
+
+      renderAttendanceTable();
+    }
+
+    function renderAttendanceTable() {
+      const tbody = document.querySelector('#attTable tbody');
+      const noData = document.getElementById('noData');
+      const title = document.getElementById('currentSubjectTitle');
+      
+      tbody.innerHTML = '';
+      
+      let records = [];
+      if (currentSubject === 'all') {
+        title.textContent = 'All Attendance Records';
+        Object.values(allAttendance).forEach(subjectRecords => {
+          records = records.concat(subjectRecords);
+        });
+      } else {
+        title.textContent = `${currentSubject} - Attendance`;
+        records = allAttendance[currentSubject] || [];
+      }
+
+      // Sort by date and time (newest first)
+      records.sort((a, b) => {
+        const dateA = new Date(a.date + ' ' + a.time);
+        const dateB = new Date(b.date + ' ' + b.time);
+        return dateB - dateA;
+      });
+
+      if (records.length === 0) {
+        noData.style.display = 'block';
+        return;
+      }
+
+      noData.style.display = 'none';
+      
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        const statusClass = r.status === 'Present' ? 'status-present' : 'status-absent';
+        const confidence = (r.confidence * 100).toFixed(0);
+        
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td>${r.time}</td>
+          <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+          <td>${confidence}%</td>
+          <td>${r.image_path ? `<a href="/static/${r.image_path}" target="_blank" class="view-image">View</a>` : '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadAttendance);
+
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      await fetch('/api/logout', {method:'POST'});
+      location.href='/';
+    });
+
+    loadUserData();
+  </script>
+</body>
+</html>
