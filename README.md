@@ -774,7 +774,8 @@ This system is designed for **LOCAL USE ONLY** and should be deployed in a contr
 
 If you find this project useful, please consider giving it a star ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Git-Suraj-hub/Vision_Mark&type=Date)](https://star-history.com/#Git-Suraj-hub/Vision_Mark&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Git-Suraj-hub/Vision_Mark&type=Date)](https://star-history.com/#Git-Suraj-hub/Vision_Mark)
+
 
 ---
 
