@@ -1,3 +1,5 @@
+**Created by: Suraj Singh Mehta**
+
 # Vision Mark — Developer Guide
 
 > Complete onboarding, architecture, and runbook reference.

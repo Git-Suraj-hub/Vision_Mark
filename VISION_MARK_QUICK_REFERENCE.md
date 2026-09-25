@@ -1,3 +1,5 @@
+**Created by: Suraj Singh Mehta**
+
 # Vision Mark — Quick Reference (one page)
 
 > Keep this open while working. Details → `VISION_MARK_DEVELOPER_GUIDE.md`.
