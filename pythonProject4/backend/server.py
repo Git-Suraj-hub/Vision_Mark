@@ -410,6 +410,11 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 # ==================== ROUTES ====================
 
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "app": "Vision_Mark"}
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
