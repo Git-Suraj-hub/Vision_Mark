@@ -19,10 +19,12 @@ load_dotenv()
 # CONFIGURATION
 # ============================================
 DATABASE_CONFIG = {
-    "host": os.getenv("DB_HOST"),
+    "host": os.getenv("DB_HOST", "gateway01.ap-northeast-1.prod.aws.tidbcloud.com"),
+    "port": int(os.getenv("DB_PORT", 4000 if "tidb" in (os.getenv("DB_HOST") or "").lower() else 3306)),
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME")
+    "database": os.getenv("DB_NAME"),
+    "ssl_disabled": (os.getenv("DB_SSL_DISABLED") or "False").lower() in ("true", "1")
 }
 
 

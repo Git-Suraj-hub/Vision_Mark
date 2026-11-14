@@ -23,12 +23,16 @@ class AdvancedFaceRecognition:
         # Database connection
    
 
-        # Database connection
+        # Database connection (Supports local MySQL & TiDB Cloud)
+        port = int(os.getenv("DB_PORT", 4000 if "tidb" in (os.getenv("DB_HOST") or "").lower() else 3306))
+        ssl_disabled = (os.getenv("DB_SSL_DISABLED") or "False").lower() in ("true", "1")
         self.conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
+            host=os.getenv("DB_HOST", "gateway01.ap-northeast-1.prod.aws.tidbcloud.com"),
+            port=port,
+            user=os.getenv("DB_USER", "3QtZDLSqiksoXFK.root"),
+            password=os.getenv("DB_PASSWORD", "Co5onzrOD2uxx23U"),
+            database=os.getenv("DB_NAME", "face_detection"),
+            ssl_disabled=ssl_disabled
         )
         self.cursor = self.conn.cursor()
         self.running = False
@@ -391,32 +395,37 @@ class AdvancedFaceRecognition:
         return bbox[2] - bbox[0]
 
     def detect_faces_adaptive(self, img):
-        """Adaptive face detection"""
+        """Adaptive face detection with reliable ArcFace 512-d embeddings across all distances"""
         quick_faces = self.arcface_app.get(img)
 
         if not quick_faces:
-            print("[INFO] No faces detected initially - trying enhancement...")
+            print("[INFO] No faces detected initially - trying image enhancement...")
             return self.detect_faces_enhanced(img)
 
-        face_widths = []
+        detected_faces = []
         for face in quick_faces:
             bbox = face.bbox.astype(int)
-            face_width = self.get_face_width(bbox)
-            face_widths.append(face_width)
+            confidence = float(face.det_score)
 
-        max_face_width = max(face_widths) if face_widths else 0
+            if confidence > 0.2:
+                face_w = self.get_face_width(bbox)
+                dist_cat = self.get_face_distance_category(bbox)
+                
+                embedding = None
+                if face.embedding is not None:
+                    norm = np.linalg.norm(face.embedding)
+                    if norm > 0:
+                        embedding = face.embedding / norm
 
-        print(f"[DEBUG] Max face width: {max_face_width:.1f}px")
+                detected_faces.append({
+                    'bbox': [bbox[0], bbox[1], bbox[2], bbox[3]],
+                    'confidence': confidence,
+                    'landmarks': face.kps if hasattr(face, 'kps') else None,
+                    'embedding': embedding,
+                    'detection_method': f"ArcFace ({dist_cat.replace('_', ' ').title()})"
+                })
 
-        if max_face_width >= self.VERY_CLOSE_THRESHOLD:
-            print("[INFO] Using RetinaFace")
-            return self.detect_faces_very_close(img)
-        elif max_face_width >= self.CLOSE_DISTANCE_THRESHOLD:
-            return self.detect_faces_arcface(img, "ArcFace (Close)")
-        elif max_face_width >= self.MID_DISTANCE_THRESHOLD:
-            return self.detect_faces_arcface(img, "ArcFace (Mid)")
-        else:
-            return self.detect_faces_enhanced(img)
+        return detected_faces
 
     def get_recognition_threshold(self, bbox):
         """Get adaptive threshold"""
@@ -501,9 +510,9 @@ class AdvancedFaceRecognition:
 
         return result_img, faces
 
-    def run_webcam(self):
+    def run_webcam(self, show_window=False):
         """Run webcam recognition"""
-        print("[INFO] Starting webcam...")
+        print(f"[INFO] Starting webcam (desktop window: {show_window})...")
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("[ERROR] Could not open webcam")
@@ -549,17 +558,28 @@ class AdvancedFaceRecognition:
             else:
                 display_frame = self.last_processed_frame if self.last_processed_frame is not None else frame
 
-            cv2.imshow('Advanced Face Recognition', display_frame)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                break
-            elif key == ord('r'):
-                print("[INFO] Reloading embeddings...")
-                self.load_known_faces_multi_distance()
+            self.current_display_frame = display_frame
+
+            if show_window:
+                cv2.imshow('Advanced Face Recognition', display_frame)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
+                    break
+                elif key == ord('r'):
+                    print("[INFO] Reloading embeddings...")
+                    self.load_known_faces_multi_distance()
+            else:
+                # Cooperative sleep when not using cv2.waitKey GUI pump
+                time.sleep(0.01)
 
         self.running = False
         cap.release()
-        cv2.destroyAllWindows()
+        if show_window:
+            cv2.destroyAllWindows()
+
+    def get_current_frame(self):
+        """Get latest processed video frame for web stream"""
+        return getattr(self, 'current_display_frame', None)
 
     def stop_webcam(self):
         """Stop webcam"""
@@ -653,7 +673,7 @@ class AdvancedFaceRecognition:
             current_day = now.strftime("%A")
 
             cur.execute("""
-                SELECT Subject, Start_Time, End_Time FROM DummyTimeTable
+                SELECT Subject, Start_Time, End_Time FROM timetable
                 WHERE Day = %s AND Start_Time <= %s AND End_Time >= %s
             """, (current_day, current_time, current_time))
             
@@ -669,15 +689,22 @@ class AdvancedFaceRecognition:
             end_time = result['End_Time']
 
             subject_table_map = {
-                "Theory of Computation": "toc_attendance",
-                "Software Engineering": "se_attendence",
-                "Database Management System": "dbms_attendence",
-                "DBMS LAB": "dbmslab_attendence",
-                "SE LAB": "selab_attendance",
-                "Personality": "personality_attendance",
-                "Introduction to Cyber Security": "ics_attendance",
-                "Elective (AI and its Applications)": "ai_mark_attendance",
-                "Minor Project": "minorproject_attendance"
+                # B.Tech CSE-7th Sem Subjects:
+                "Fuzzy Set Theory and Its Application": "fuzzy_attendance",
+                "Fuzzy Set Theory and its Application": "fuzzy_attendance",
+                "Fuzzy Set Theory": "fuzzy_attendance",
+                "Soft Skills and Interpersonal Communications": "softskills_attendance",
+                "Soft Skills and Enter personal Communications": "softskills_attendance",
+                "Soft Skills": "softskills_attendance",
+                "Remote Sensing and GIS": "remotesensing_attendance",
+                "Remote Sensing and G S": "remotesensing_attendance",
+                "Remote Sensing": "remotesensing_attendance",
+                "Computer Network Security and Cryptography": "cryptography_attendance",
+                "Network Security and Cryptography": "cryptography_attendance",
+                "CNSC": "cryptography_attendance",
+                "Data Analysis": "dataanalysis_attendance",
+                "Major Project": "majorproject_attendance",
+                "Major Project / Seminar": "majorproject_attendance"
             }
 
             table_name = subject_table_map.get(subject)
@@ -713,12 +740,18 @@ class AdvancedFaceRecognition:
             except:
                 pass
 
-def __del__(self):
+    def __del__(self):
         """Cleanup"""
         if hasattr(self, 'cursor'):
-            self.cursor.close()
+            try:
+                self.cursor.close()
+            except:
+                pass
         if hasattr(self, 'conn'):
-            self.conn.close()
+            try:
+                self.conn.close()
+            except:
+                pass
 
 
 # ============================================
@@ -745,7 +778,7 @@ def main():
             choice = input("\nEnter your choice (1-6): ").strip()
 
             if choice == '1':
-                face_recognition.run_webcam()
+                face_recognition.run_webcam(show_window=True)
 
             elif choice == '2':
                 image_path = input("Enter image path: ").strip()

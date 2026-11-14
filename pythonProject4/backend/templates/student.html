@@ -3,9 +3,182 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Dashboard</title>
+  <title>Student Dashboard — Vision Mark</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
   <link href="/static/css/style.css" rel="stylesheet">
+  <!-- Chart.js for student analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Student Profile Hero Card */
+    .student-profile-hero {
+      background: linear-gradient(135deg, #1B365D 0%, #2A5298 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 25px;
+      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .profile-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .profile-avatar-wrapper {
+      position: relative;
+      width: 85px;
+      height: 85px;
+      flex-shrink: 0;
+    }
+    .profile-avatar-img {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      background: #ffffff;
+      display: block;
+    }
+    .profile-avatar {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background: white;
+      color: #1B365D;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      border: 3px solid rgba(255,255,255,0.8);
+    }
+    .btn-student-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: white !important;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 9px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+    .btn-student-download:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+    }
+    .profile-info h3 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+    .profile-meta {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+    .profile-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .profile-right {
+      text-align: right;
+      min-width: 200px;
+    }
+    .attendance-gauge-val {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .eligibility-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-pass {
+      background: #4CAF50;
+      color: white;
+    }
+    .badge-warn {
+      background: #F44336;
+      color: white;
+    }
+
+    /* Advisory Banner */
+    .advisory-box {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      border-left: 5px solid #2196F3;
+    }
+    .advisory-icon {
+      font-size: 1.8rem;
+    }
+    .advisory-text {
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    /* Charts Row */
+    .student-charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 25px;
+    }
+    @media (max-width: 850px) {
+      .student-charts-row { grid-template-columns: 1fr; }
+    }
+    .chart-box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+    .chart-box h4 {
+      font-size: 1.05rem;
+      color: #2D3748;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Subject Badges in Tabs */
+    .tab-badge {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px;
+      font-weight: 700;
+    }
+    .tab-badge-pass { background: #E8F5E9; color: #2E7D32; }
+    .tab-badge-fail { background: #FFEBEE; color: #C62828; }
+  </style>
 </head>
 <body class="dashboard-page">
   <div class="logo-background"></div>
@@ -13,51 +186,112 @@
   <nav class="navbar">
     <div class="navbar-brand">
       <img src="/static/images/logo.png" alt="Logo" class="navbar-logo">
-      <span>Attendance System</span>
+      <span>Vision Mark — Student Portal</span>
     </div>
     <div class="navbar-user">
-      <span id="welcome"></span>
+      <span id="welcome">Loading...</span>
       <button id="logoutBtn" class="btn btn-small btn-danger">Logout</button>
     </div>
   </nav>
 
   <div class="container dashboard-container">
-    <div class="dashboard-header">
-      <h2>📊 My Attendance Dashboard</h2>
-      <p class="subtitle">Track your attendance across all subjects</p>
+    
+    <!-- Student Profile Hero Card -->
+    <div class="student-profile-hero">
+      <div class="profile-left">
+        <div class="profile-avatar-wrapper">
+          <img id="profPhoto" class="profile-avatar-img" src="/api/student/photo/unknown" alt="Student Photo" onerror="this.style.display='none'; document.getElementById('avatarLetter').style.display='flex';">
+          <div class="profile-avatar" id="avatarLetter" style="display: none;">S</div>
+        </div>
+        <div class="profile-info">
+          <h3 id="profName">—</h3>
+          <div class="profile-meta">
+            <span><strong>Roll / Enrollment:</strong> <span id="profEnroll">—</span></span>
+            <span>•</span>
+            <span><strong>Class:</strong> <span id="profClass">—</span></span>
+            <span>•</span>
+            <span><strong>Username:</strong> <code id="profUsername" style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 4px;">—</code></span>
+            <span>•</span>
+            <span><strong>Parent Contact:</strong> <span id="profParentPhone">—</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="profile-right">
+        <div class="attendance-gauge-val" id="profOverallPct">—%</div>
+        <div class="eligibility-badge" id="profStatusBadge">Calculating...</div>
+        <div>
+          <a href="/api/student/export_my_report" target="_blank" class="btn-student-download">
+            <span>📥</span> Download My Report (.xlsx)
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Advisory Alert -->
+    <div class="advisory-box" id="advisoryBox">
+      <div class="advisory-icon" id="advisoryIcon">💡</div>
+      <div class="advisory-text" id="advisoryText">
+        Analyzing your attendance records against the university 75% examination eligibility rule...
+      </div>
+    </div>
+
+    <!-- Analytics Charts Row -->
+    <div class="student-charts-row">
+      <!-- Subject-wise Attendance Percentage Bar Chart -->
+      <div class="chart-box">
+        <h4><span>📊</span> Subject-Wise Attendance % (75% Benchmark)</h4>
+        <div style="position: relative; height: 260px;">
+          <canvas id="subjectBarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Overall Present vs Absent Ratio Donut Chart -->
+      <div class="chart-box">
+        <h4><span>🥧</span> Overall Classes Attended vs Missed</h4>
+        <div style="position: relative; height: 260px;">
+          <canvas id="ratioDonutChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Statistics Cards -->
     <div class="stats-grid" id="statsGrid">
-      <!-- Will be populated dynamically -->
+      <!-- Populated dynamically -->
     </div>
 
     <!-- Subject Tabs -->
     <div class="subject-tabs" id="subjectTabs">
-      <!-- Will be populated dynamically -->
+      <!-- Populated dynamically -->
     </div>
 
     <!-- Attendance Table -->
-    <div class="card">
+    <div class="card" style="background: white; color: #333;">
       <div class="card-header">
-        <h3 id="currentSubjectTitle">All Attendance</h3>
-        <button id="refreshBtn" class="btn btn-small btn-secondary">🔄 Refresh</button>
+        <h3 id="currentSubjectTitle" style="color: #2D3748;">All Attendance Records</h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="/api/student/export_my_report" target="_blank" class="btn btn-small btn-success" style="background: #10B981; color: white; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;">
+            <span>📥</span> Download Excel (.xlsx)
+          </a>
+          <button id="refreshBtn" class="btn btn-small btn-secondary">🔄 Refresh</button>
+        </div>
       </div>
       <div class="table-container">
         <table id="attTable">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Time</th>
+              <th>Date &amp; Day</th>
+              <th>Class In-Time</th>
               <th>Status</th>
-              <th>Confidence</th>
-              <th>Image</th>
+              <th>Verification Method</th>
+              <th>Official Remarks / Audit Note</th>
+              <th>AI Match %</th>
+              <th>Capture</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
         <div id="noData" class="no-data" style="display:none;">
-          <p>No attendance records found</p>
+          <p>No attendance records found for this selection</p>
         </div>
       </div>
     </div>
@@ -67,6 +301,8 @@
     let currentUser = null;
     let allAttendance = {};
     let currentSubject = 'all';
+    let subjectBarChartInstance = null;
+    let ratioDonutChartInstance = null;
 
     async function loadUserData() {
       const u = await (await fetch('/api/current_user')).json();
@@ -77,7 +313,133 @@
       currentUser = u.user;
       document.getElementById('welcome').innerText = `Welcome, ${currentUser.name || currentUser.username}`;
       
+      await loadStudentProfile();
       await loadAttendance();
+    }
+
+    async function loadStudentProfile() {
+      try {
+        const res = await fetch('/api/student/profile');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const p = data.profile;
+        document.getElementById('profName').textContent = p.name;
+        document.getElementById('profEnroll').textContent = p.enrollment_no;
+        document.getElementById('profClass').textContent = p.class;
+        document.getElementById('profUsername').textContent = p.username;
+        document.getElementById('profParentPhone').textContent = p.parent_phone || 'Not Registered';
+        document.getElementById('profOverallPct').textContent = `${p.overall_percentage}%`;
+
+        const photoImg = document.getElementById('profPhoto');
+        const letterAvatar = document.getElementById('avatarLetter');
+        photoImg.src = `/api/student/photo/${p.enrollment_no}?t=${Date.now()}`;
+        photoImg.style.display = 'block';
+        letterAvatar.style.display = 'none';
+        letterAvatar.textContent = (p.name || 'S').charAt(0).toUpperCase();
+
+        const badge = document.getElementById('profStatusBadge');
+        const advBox = document.getElementById('advisoryBox');
+        const advIcon = document.getElementById('advisoryIcon');
+        const advText = document.getElementById('advisoryText');
+
+        if (p.overall_percentage >= 75) {
+          badge.className = 'eligibility-badge badge-pass';
+          badge.textContent = '✅ Exam Eligible (≥ 75%)';
+          advBox.style.borderLeftColor = '#4CAF50';
+          advIcon.textContent = '🎉';
+          advText.innerHTML = `<strong>Safe Standing:</strong> You have attended <strong>${p.total_attended} of ${p.total_classes}</strong> sessions (${p.overall_percentage}%). You are eligible for examinations and can miss up to <strong>${p.safe_margin}</strong> classes while staying safely above the 75% bar.`;
+        } else {
+          badge.className = 'eligibility-badge badge-warn';
+          badge.textContent = '⚠️ Shortage Alert (< 75%)';
+          advBox.style.borderLeftColor = '#F44336';
+          advIcon.textContent = '⚠️';
+          advText.innerHTML = `<strong>Attendance Defaulter Warning:</strong> Your current attendance is <strong>${p.overall_percentage}%</strong> (${p.total_attended} attended out of ${p.total_classes} total classes). You need to attend the next <strong>${p.needed_classes}</strong> consecutive classes without absence to achieve 75% exam eligibility!`;
+        }
+
+        // Render Charts
+        renderSubjectBarChart(data.subject_breakdown);
+        renderRatioDonutChart(p.total_attended, Math.max(0, p.total_classes - p.total_attended));
+
+      } catch (e) {
+        console.error('Error loading student profile:', e);
+      }
+    }
+
+    function renderSubjectBarChart(breakdown) {
+      const ctx = document.getElementById('subjectBarChart').getContext('2d');
+      if (subjectBarChartInstance) subjectBarChartInstance.destroy();
+
+      if (!breakdown || breakdown.length === 0) return;
+
+      const labels = breakdown.map(b => b.subject);
+      const values = breakdown.map(b => b.percentage);
+      const colors = breakdown.map(b => b.percentage >= 75 ? 'rgba(76, 175, 80, 0.85)' : 'rgba(244, 67, 54, 0.85)');
+
+      subjectBarChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Attendance %',
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { callback: v => v + '%' }
+            },
+            x: {
+              ticks: {
+                callback: function(val) {
+                  const lbl = this.getLabelForValue(val);
+                  return lbl.length > 15 ? lbl.substr(0, 15) + '…' : lbl;
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Attendance: ${ctx.raw}% (${ctx.raw >= 75 ? 'Eligible' : 'Shortage'})`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderRatioDonutChart(attended, missed) {
+      const ctx = document.getElementById('ratioDonutChart').getContext('2d');
+      if (ratioDonutChartInstance) ratioDonutChartInstance.destroy();
+
+      ratioDonutChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Attended Classes', 'Missed Classes'],
+          datasets: [{
+            data: [attended || 0, missed || 0],
+            backgroundColor: ['#4CAF50', '#F44336'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
     }
 
     async function loadAttendance() {
@@ -105,16 +467,16 @@
 
       Object.keys(allAttendance).forEach(subject => {
         const records = allAttendance[subject];
-        totalPresent += records.filter(r => r.status === 'Present').length;
+        totalPresent += records.filter(r => r.status === 'Present' || r.status === 'Late').length;
         totalClasses += records.length;
       });
 
       const percentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : 0;
 
       const stats = [
-        { label: 'Total Classes', value: totalClasses, icon: '📚', color: '#4CAF50' },
-        { label: 'Present', value: totalPresent, icon: '✅', color: '#2196F3' },
-        { label: 'Attendance %', value: percentage + '%', icon: '📊', color: '#FF9800' }
+        { label: 'Total Tracked Sessions', value: totalClasses, icon: '📚', color: '#4CAF50' },
+        { label: 'Attended Classes', value: totalPresent, icon: '✅', color: '#2196F3' },
+        { label: 'Overall Attendance Rate', value: percentage + '%', icon: '📊', color: '#FF9800' }
       ];
 
       stats.forEach(stat => {
@@ -146,7 +508,13 @@
         if (allAttendance[subject].length > 0) {
           const tab = document.createElement('button');
           tab.className = 'subject-tab';
-          tab.textContent = subject;
+          
+          const records = allAttendance[subject];
+          const pres = records.filter(r => r.status === 'Present' || r.status === 'Late').length;
+          const pct = Math.round((pres / records.length) * 100);
+          const badgeClass = pct >= 75 ? 'tab-badge-pass' : 'tab-badge-fail';
+
+          tab.innerHTML = `${subject} <span class="tab-badge ${badgeClass}">${pct}%</span>`;
           tab.onclick = () => selectSubject(subject);
           tabsContainer.appendChild(tab);
         }
@@ -155,12 +523,11 @@
 
     function selectSubject(subject) {
       currentSubject = subject;
-      
-      // Update active tab
       document.querySelectorAll('.subject-tab').forEach(tab => {
         tab.classList.remove('active');
-        if ((subject === 'all' && tab.textContent === 'All Subjects') ||
-            tab.textContent === subject) {
+        if (subject === 'all' && tab.textContent.includes('All Subjects')) {
+          tab.classList.add('active');
+        } else if (tab.textContent.includes(subject)) {
           tab.classList.add('active');
         }
       });
@@ -177,19 +544,20 @@
       
       let records = [];
       if (currentSubject === 'all') {
-        title.textContent = 'All Attendance Records';
+        title.textContent = 'All Subjects — Attendance History';
         Object.values(allAttendance).forEach(subjectRecords => {
           records = records.concat(subjectRecords);
         });
       } else {
-        title.textContent = `${currentSubject} - Attendance`;
+        title.textContent = `${currentSubject} — Attendance History`;
         records = allAttendance[currentSubject] || [];
       }
 
-      // Sort by date and time (newest first)
       records.sort((a, b) => {
-        const dateA = new Date(a.date + ' ' + a.time);
-        const dateB = new Date(b.date + ' ' + b.time);
+        const timeA = a.raw_time || a.time;
+        const timeB = b.raw_time || b.time;
+        const dateA = new Date(a.date + ' ' + timeA);
+        const dateB = new Date(b.date + ' ' + timeB);
         return dateB - dateA;
       });
 
@@ -202,23 +570,38 @@
       
       records.forEach(r => {
         const tr = document.createElement('tr');
-        const statusClass = r.status === 'Present' ? 'status-present' : 'status-absent';
-        const confidence = (r.confidence * 100).toFixed(0);
+        const statusClass = r.status === 'Present' ? 'status-present' : (r.status === 'Late' ? 'status-late' : 'status-absent');
+        const isAuto = (r.recognized_by || '').toLowerCase().includes('arcface') || 
+                       (r.recognized_by || '').toLowerCase().includes('biometric') || 
+                       (r.recognized_by || '').toLowerCase().includes('auto');
+        const methodBadge = isAuto 
+          ? `<span class="badge" style="background:#E0F2FE; color:#0369A1; font-weight:700;">🤖 Biometric Face</span>` 
+          : `<span class="badge" style="background:#F3E8FF; color:#6B21A8; font-weight:700;">✍️ Faculty Manual</span>`;
+        const confidence = r.confidence ? `${(r.confidence * 100).toFixed(0)}%` : (isAuto ? '100%' : 'Manual');
+        const normalizedImg = r.image_path ? r.image_path.replace(/\\\\/g, '/') : null;
+        const displayDate = r.display_date || r.date;
+        const dayLabel = r.day ? ` <span style="font-size:0.8rem; color:#64748B;">(${r.day.substr(0,3)})</span>` : '';
+        const remarksText = r.remarks || (r.status === 'Present' ? 'Verified Present via AI Biometric' : 'Class Session Absence');
         
         tr.innerHTML = `
-          <td>${r.date}</td>
-          <td>${r.time}</td>
-          <td><span class="status-badge ${statusClass}">${r.status}</span></td>
-          <td>${confidence}%</td>
-          <td>${r.image_path ? `<a href="/static/${r.image_path}" target="_blank" class="view-image">View</a>` : '-'}</td>
+          <td><strong>${displayDate}</strong>${dayLabel}</td>
+          <td><strong style="color: #1E3A8A; font-size: 0.92rem;">${r.time}</strong></td>
+          <td><span class="badge ${statusClass}">${r.status}</span></td>
+          <td>${methodBadge}</td>
+          <td style="max-width: 240px; font-size: 0.86rem; color: #334155; line-height: 1.35;">${remarksText}</td>
+          <td>${confidence}</td>
+          <td>${normalizedImg ? `<a href="/static/${normalizedImg}" target="_blank" class="btn btn-small btn-secondary" style="padding: 2px 8px;">📷 View</a>` : '—'}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    document.getElementById('refreshBtn').addEventListener('click', loadAttendance);
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      await loadStudentProfile();
+      await loadAttendance();
+    });
 
-    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/logout', {method:'POST'});
       location.href='/';
     });

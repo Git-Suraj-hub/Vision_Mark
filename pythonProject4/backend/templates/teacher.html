@@ -3,164 +3,1327 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teacher Dashboard</title>
+  <title>Teacher Dashboard — Vision Mark Enterprise</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
   <link href="/static/css/style.css" rel="stylesheet">
+  <!-- Chart.js for real-world interactive visual analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    @keyframes slideInRight {
-  from {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
+    :root {
+      --primary: #1B365D;
+      --primary-light: #2A5298;
+      --accent: #4F46E5;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --bg-slate: #F8FAFC;
+      --card-border: #E2E8F0;
+    }
 
-@keyframes slideOutRight {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-}
+    body {
+      background: #F1F5F9;
+      color: #1E293B;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Modern Executive Header */
+    .dashboard-header-modern {
+      background: linear-gradient(135deg, #1B365D 0%, #1E293B 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 24px 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px rgba(27, 54, 93, 0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .header-title-box h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+      color: white;
+    }
+    .header-title-box p {
+      font-size: 0.95rem;
+      opacity: 0.85;
+      margin: 0;
+    }
+    .header-quick-badge {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Main Navigation Tabs */
+    .dashboard-nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: white;
+      padding: 8px;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      margin-bottom: 24px;
+      border: 1px solid var(--card-border);
+      flex-wrap: wrap;
+    }
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #64748B;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .nav-tab-btn:hover {
+      background: #F8FAFC;
+      color: var(--primary);
+    }
+    .nav-tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(27, 54, 93, 0.25);
+    }
+
+    /* Time Filter Pill Switcher (Daily / Weekly / Monthly / All) */
+    .filter-pills-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+    .filter-pills-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pills-group {
+      display: flex;
+      gap: 6px;
+      background: #F1F5F9;
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .pill-btn {
+      background: transparent;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748B;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .pill-btn:hover {
+      color: #0F172A;
+    }
+    .pill-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Modern KPI Cards */
+    .kpi-row-modern {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-box-modern {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-box-modern:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .kpi-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .kpi-label-text {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748B;
+    }
+    .kpi-icon-pill {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .kpi-number-main {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0F172A;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .kpi-subtext-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Analytics Charts Grid */
+    .charts-grid-2col {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1000px) {
+      .charts-grid-2col { grid-template-columns: 1fr; }
+    }
+    .chart-panel-modern {
+      background: white;
+      border-radius: 14px;
+      padding: 22px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .panel-header-modern {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .panel-header-modern h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-badge-info {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    /* Live Video Streaming Container */
+    .video-stream-card {
+      background: #0F172A;
+      color: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .video-stream-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #EF4444;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .video-viewport {
+      width: 100%;
+      height: 440px;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .video-viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Face Registration / Dataset Capture Card */
+    .enrollment-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 26px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      margin-bottom: 24px;
+    }
+    .enroll-mode-selector {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0 20px 0;
+    }
+    .enroll-mode-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px solid #E2E8F0;
+      background: #F8FAFC;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .enroll-mode-btn.active {
+      border-color: var(--primary);
+      background: #EFF6FF;
+      color: var(--primary);
+    }
+    .webcam-capture-box {
+      border: 2px dashed #CBD5E1;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: #F8FAFC;
+      margin-bottom: 20px;
+    }
+    .snapshots-gallery {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px 0;
+      margin-top: 15px;
+    }
+    .snap-thumb {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+
+    /* Defaulter WhatsApp Modal */
+    .modal-backdrop-custom {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop-custom.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .notice-modal-card {
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 580px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      padding: 25px;
+      transform: translateY(20px);
+      transition: transform 0.2s ease;
+    }
+    .modal-backdrop-custom.open .notice-modal-card {
+      transform: translateY(0);
+    }
+    .notice-preview-textarea {
+      width: 100%;
+      height: 180px;
+      font-family: monospace;
+      font-size: 0.88rem;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      resize: vertical;
+      margin: 12px 0;
+      line-height: 1.4;
+    }
+
+    /* Badges & Tables */
+    .status-pill-safe {
+      background: #D1FAE5;
+      color: #065F46;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .status-pill-danger {
+      background: #FEE2E2;
+      color: #991B1B;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .btn-action-whatsapp {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+    .btn-action-whatsapp:hover {
+      background: #1EBE5B;
+    }
+    .btn-action-excel-sm {
+      background: #0284C7;
+      color: white !important;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+    .btn-action-excel-sm:hover {
+      background: #0369A1;
+    }
+    .report-stat-ribbon {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 24px;
+    }
+    .report-stat-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .report-stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .report-stat-title {
+      font-size: 0.8rem;
+      color: #64748B;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .report-stat-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .single-student-audit-card {
+      background: linear-gradient(135deg, #F0FDF4 0%, #F8FAFC 100%);
+      border: 1px solid #BBF7D0;
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .audit-selector-box {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 280px;
+    }
+    .audit-select-dropdown {
+      padding: 10px 14px;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: white;
+      min-width: 260px;
+      font-weight: 600;
+      color: #1E293B;
+    }
+    .register-legend-container {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-top: 24px;
+    }
+    .legend-pills-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .legend-badge-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    /* Excel Export Registers Grid & Cards */
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .export-option-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .export-option-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      border-color: #CBD5E1;
+    }
+    .export-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 8px;
+    }
+    .export-desc {
+      font-size: 0.88rem;
+      color: #64748B;
+      line-height: 1.45;
+      margin-bottom: 20px;
+    }
+    .btn-excel {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: #FFFFFF !important;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+      padding: 12px 18px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-excel:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+      color: #FFFFFF !important;
+    }
+
+    /* Class Timetable Live vs Preview Status Banner */
+    .class-status-banner {
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border: 1px solid transparent;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+    .banner-live {
+      background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+      border-color: #6EE7B7;
+      color: #065F46;
+    }
+    .banner-testing {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      border-color: #FCD34D;
+      color: #92400E;
+    }
+    .banner-content-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .banner-icon {
+      font-size: 2.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    .banner-title {
+      font-size: 1.12rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+      letter-spacing: -0.2px;
+    }
+    .banner-subtitle {
+      font-size: 0.88rem;
+      font-weight: 500;
+      line-height: 1.45;
+      opacity: 0.95;
+    }
+    .banner-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-live {
+      background: #059669;
+      color: #FFFFFF;
+      box-shadow: 0 2px 10px rgba(5,150,105,0.35);
+    }
+    .badge-testing {
+      background: #D97706;
+      color: #FFFFFF;
+      box-shadow: 0 2px 10px rgba(217,119,6,0.35);
+    }
+    .status-late {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D;
+    }
   </style>
 </head>
 <body class="dashboard-page">
   <div class="logo-background"></div>
   
+  <!-- Navigation Top Bar -->
   <nav class="navbar">
     <div class="navbar-brand">
       <img src="/static/images/logo.png" alt="Logo" class="navbar-logo">
-      <span>Attendance System</span>
+      <span>Vision Mark — Faculty Enterprise</span>
     </div>
     <div class="navbar-user">
-      <span id="welcome"></span>
+      <span id="welcome">Loading...</span>
       <button id="logoutBtn" class="btn btn-small btn-danger">Logout</button>
     </div>
   </nav>
 
   <div class="container dashboard-container">
-    <div class="dashboard-header">
-      <h2>👨‍🏫 Teacher Dashboard</h2>
-      <p class="subtitle" id="subjectInfo">Managing your subject</p>
-    </div>
-
-    <!-- Current Class Info -->
-    <div class="card current-class-card" id="currentClassCard">
-      <h3>🎯 Current Class</h3>
-      <div id="currentClassInfo" class="current-class-info">
-        <p class="loading-text">Loading...</p>
+    
+    <!-- Executive Header Banner -->
+    <div class="dashboard-header-modern">
+      <div class="header-title-box">
+        <h2>👨‍🏫 Faculty Portal &amp; Academic Center</h2>
+        <p id="subjectInfo">Loading assigned course...</p>
+      </div>
+      <div class="header-quick-badge" id="timetableStatusBadge">
+        ⏳ Checking Timetable...
       </div>
     </div>
 
-    <!-- Control Panel -->
-    <div class="card control-panel">
-      <h3>🎬 Recognition Controls</h3>
-      <div class="controls-grid">
-        <button id="startBtn" class="btn btn-success btn-large">
-          <span class="btn-icon">▶️</span>
-          <span>Start Recognition</span>
-        </button>
-        <button id="stopBtn" class="btn btn-danger btn-large">
-          <span class="btn-icon">⏹️</span>
-          <span>Stop Recognition</span>
-        </button>
-        <button id="refreshBtn" class="btn btn-secondary btn-large">
-          <span class="btn-icon">🔄</span>
-          <span>Refresh Data</span>
-        </button>
-      </div>
+    <!-- Navigation Tabs -->
+    <div class="dashboard-nav-tabs">
+      <button class="nav-tab-btn active" onclick="switchMainTab('analytics')">
+        <span>📊</span> Visual Analytics &amp; Bunk Trends
+      </button>
+      <button class="nav-tab-btn" onclick="switchMainTab('recognition')">
+        <span>📷</span> Real-Time Recognition &amp; Camera Stream
+      </button>
+      <button class="nav-tab-btn" onclick="switchMainTab('enrollment')">
+        <span>📸</span> Student Registration &amp; Face Dataset
+      </button>
+      <button class="nav-tab-btn" onclick="switchMainTab('reports')">
+        <span>📥</span> Excel Attendance Registers
+      </button>
     </div>
 
-    <!-- Image Upload for Testing -->
-    <div class="card">
-      <h3>🖼️ Test Face Recognition</h3>
-      <div class="upload-section">
-        <form id="uploadForm">
-          <div class="file-upload">
-            <input type="file" id="imageFile" accept="image/*" required>
-            <label for="imageFile" class="file-label">
-              <span class="file-icon">📁</span>
-              <span class="file-text">Choose Image</span>
-            </label>
-            <span id="fileName" class="file-name"></span>
+    <!-- ==================== TAB 1: VISUAL ANALYTICS & BUNK TRENDS ==================== -->
+    <div id="tab-analytics" class="main-tab-content">
+      
+      <!-- Interactive Period Switcher (Daily / Weekly / Monthly / All) -->
+      <div class="filter-pills-bar">
+        <div class="filter-pills-title">
+          <span>⚡ Attendance Analytics Period:</span>
+        </div>
+        <div class="pills-group">
+          <button class="pill-btn" onclick="setAnalyticsPeriod('daily', this)">Today (Daily)</button>
+          <button class="pill-btn" onclick="setAnalyticsPeriod('weekly', this)">This Week</button>
+          <button class="pill-btn" onclick="setAnalyticsPeriod('monthly', this)">This Month</button>
+          <button class="pill-btn active" onclick="setAnalyticsPeriod('all', this)">All Semester</button>
+        </div>
+      </div>
+
+      <!-- Modern KPI Cards -->
+      <div class="kpi-row-modern">
+        <div class="kpi-box-modern">
+          <div class="kpi-top-row">
+            <span class="kpi-label-text">Total Enrolled</span>
+            <div class="kpi-icon-pill" style="background: #EFF6FF; color: #2563EB;">👥</div>
           </div>
-          <button type="submit" class="btn btn-primary">
-            <span>🔍 Test Recognition</span>
-          </button>
-        </form>
-        <div id="testResults" class="test-results"></div>
-      </div>
-    </div>
+          <div class="kpi-number-main" id="kpi-students">—</div>
+          <div class="kpi-subtext-badge" style="color: #2563EB;">Active Students</div>
+        </div>
 
-    <!-- Recent Recognitions -->
-    <div class="card">
-      <div class="card-header">
-        <h3>🎯 Recent Recognitions</h3>
-        <span class="badge" id="recentCount">0</span>
-      </div>
-      <div id="recentRecognitions" class="recognition-list">
-        <p class="no-data">No recognitions yet. Start webcam to begin.</p>
-      </div>
-    </div>
-
-    <!-- Statistics -->
-    <div class="stats-grid" id="statsGrid">
-      <!-- Will be populated -->
-    </div>
-
-    <!-- Manual Attendance Marking -->
-    <div class="card">
-      <h3>✏️ Manual Attendance Marking</h3>
-      <form id="markForm" class="mark-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="m_enroll">Enrollment Number</label>
-            <input id="m_enroll" type="text" placeholder="Enter enrollment no" required>
+        <div class="kpi-box-modern">
+          <div class="kpi-top-row">
+            <span class="kpi-label-text">Average Attendance</span>
+            <div class="kpi-icon-pill" style="background: #ECFDF5; color: #059669;">📈</div>
           </div>
-          <div class="form-group">
-            <label for="m_status">Status</label>
-            <select id="m_status">
-              <option value="Present">Present</option>
-              <option value="Absent">Absent</option>
-              <option value="Late">Late</option>
-            </select>
+          <div class="kpi-number-main" id="kpi-avg-pct">—%</div>
+          <div class="kpi-subtext-badge" id="kpi-avg-sub" style="color: #059669;">Batch Performance</div>
+        </div>
+
+        <div class="kpi-box-modern">
+          <div class="kpi-top-row">
+            <span class="kpi-label-text">Sessions Conducted</span>
+            <div class="kpi-icon-pill" style="background: #FFFBEB; color: #D97706;">📚</div>
           </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary">✅ Mark Attendance</button>
+          <div class="kpi-number-main" id="kpi-sessions">—</div>
+          <div class="kpi-subtext-badge" style="color: #D97706;">Lecture Sessions</div>
+        </div>
+
+        <div class="kpi-box-modern">
+          <div class="kpi-top-row">
+            <span class="kpi-label-text">Defaulter Students</span>
+            <div class="kpi-icon-pill" style="background: #FEF2F2; color: #DC2626;">⚠️</div>
+          </div>
+          <div class="kpi-number-main" id="kpi-defaulters">—</div>
+          <div class="kpi-subtext-badge" style="color: #DC2626;">Below 75% Criteria</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1: Line Area Trend + Donut -->
+      <div class="charts-grid-2col">
+        <!-- Area Line Chart: Attendance Timeline -->
+        <div class="chart-panel-modern">
+          <div class="panel-header-modern">
+            <h3><span>📈</span> Attendance Rate Progression Timeline</h3>
+            <span class="panel-badge-info" id="trendSubTitle">Selected Period</span>
+          </div>
+          <div style="position: relative; height: 280px;">
+            <canvas id="trendChart"></canvas>
           </div>
         </div>
-      </form>
+
+        <!-- Donut Chart: Present vs Absent vs Late -->
+        <div class="chart-panel-modern">
+          <div class="panel-header-modern">
+            <h3><span>🥧</span> Present vs Absent Ratio</h3>
+            <span class="panel-badge-info">Status Ratio</span>
+          </div>
+          <div style="position: relative; height: 280px;">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2: Day of Week Bunk Analysis + Student Ranking -->
+      <div class="charts-grid-2col">
+        <!-- Day-of-Week Bunk / Absenteeism Bar Chart -->
+        <div class="chart-panel-modern">
+          <div class="panel-header-modern">
+            <h3><span>📅</span> Day-Of-Week Bunk &amp; Absenteeism Analysis</h3>
+            <span class="panel-badge-info" id="bunkInsightBadge" style="background: #FEF2F2; color: #DC2626;">Peak Bunk: Friday</span>
+          </div>
+          <div style="position: relative; height: 280px;">
+            <canvas id="dayOfWeekChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Student-wise Ranking with 75% Threshold Line -->
+        <div class="chart-panel-modern">
+          <div class="panel-header-modern">
+            <h3><span>📊</span> Student Ranking &amp; 75% Benchmark</h3>
+            <span class="panel-badge-info">75% Passing Line</span>
+          </div>
+          <div style="position: relative; height: 280px;">
+            <canvas id="studentBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Defaulter Watchlist & WhatsApp Parent Notification Table -->
+      <div class="chart-panel-modern" style="margin-bottom: 25px;">
+        <div class="panel-header-modern">
+          <h3><span>🚨</span> Defaulter Watchlist (&lt; 75%) &amp; Parent Notice Action Center</h3>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="/api/teacher/export_report?period=all" target="_blank" class="btn btn-small btn-success" style="background: #10B981; color: white; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;">
+              <span>📥</span> Export Register (.xlsx)
+            </a>
+            <button onclick="loadAnalyticsData()" class="btn btn-small btn-secondary">🔄 Refresh Stats</button>
+          </div>
+        </div>
+        <p style="font-size: 0.9rem; color: #64748B; margin-bottom: 15px;">
+          Send instant WhatsApp notices or generate official university warning letters for students currently below the mandatory 75% examination eligibility bar.
+        </p>
+        <div class="table-container">
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Enrollment No</th>
+                <th>Student Name</th>
+                <th>Attended / Total</th>
+                <th>Attendance %</th>
+                <th>Shortage (Classes Missed)</th>
+                <th>Status</th>
+                <th>Parent Notification Action</th>
+              </tr>
+            </thead>
+            <tbody id="studentStatsTableBody">
+              <tr><td colspan="7" style="text-align: center;">Loading student analysis...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Attendance Table -->
-    <div class="card">
-      <div class="card-header">
-        <h3 id="tableTitle">📋 Attendance Records</h3>
+    <!-- ==================== TAB 2: RECOGNITION & IN-BROWSER STREAM ==================== -->
+    <div id="tab-recognition" class="main-tab-content" style="display: none;">
+      
+      <!-- Timetable Enforced Live vs Preview Alert Banner -->
+      <div id="cameraClassStatusBanner" class="class-status-banner banner-testing">
+        <div class="banner-content-box">
+          <div class="banner-icon" id="bannerIcon">⏳</div>
+          <div>
+            <div class="banner-title" id="bannerTitle">Synchronizing Timetable Schedule...</div>
+            <div class="banner-subtitle" id="bannerSubtitle">Checking active university lecture slots...</div>
+          </div>
+        </div>
+        <div id="bannerBadge" class="banner-badge badge-testing">Checking</div>
       </div>
-      <div class="table-container">
-        <table id="allTable">
-          <thead>
-            <tr>
-              <th>Enrollment</th>
-              <th>Name</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Status</th>
-              <th>Method</th>
-              <th>Confidence</th>
-              <th>Image</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div id="noData" class="no-data" style="display:none;">
-          <p>No attendance records found</p>
+
+      <!-- In-Browser Live Video Stream Card -->
+      <div class="video-stream-card" id="webStreamCard">
+        <div class="video-stream-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <h3 style="margin: 0; font-size: 1.2rem;">📹 Live Classroom AI Recognition Stream</h3>
+            <span class="live-indicator" id="liveBadge" style="display: none;">● LIVE STREAM</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="startCamBtn" class="btn btn-success" style="padding: 8px 16px;">
+              <span>▶️ Start Camera</span>
+            </button>
+            <button id="stopCamBtn" class="btn btn-danger" style="padding: 8px 16px;">
+              <span>⏹️ Stop Camera</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="video-viewport" id="viewportPlaceholder">
+          <div id="noStreamMsg" style="text-align: center; color: #94A3B8;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📷</div>
+            <p style="font-size: 1.1rem; font-weight: 600;">Camera is currently stopped</p>
+            <p style="font-size: 0.85rem; opacity: 0.7;">Click "Start Camera" to begin real-time multi-face recognition.</p>
+          </div>
+          <img id="liveVideoFeed" style="display: none;" alt="Live Recognition Stream">
+        </div>
+      </div>
+
+      <!-- Live Recognized Students Carousel -->
+      <div class="card" style="background: white; border: 1px solid var(--card-border);">
+        <div class="card-header">
+          <h3 style="color: #0F172A;">🎯 Real-Time Detections Feed</h3>
+          <span class="badge" id="recentCount">0</span>
+        </div>
+        <div id="recentRecognitions" class="recognition-list">
+          <p class="no-data">Start camera to see live recognized students.</p>
+        </div>
+      </div>
+
+      <!-- Manual Attendance Marking (with Direct Mode & Custom Date/Time) -->
+      <div class="card" style="background: white; border: 1px solid var(--card-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+          <h3 style="color: #0F172A; margin: 0;">✏️ Manual Faculty Attendance &amp; Override</h3>
+          <span style="font-size: 0.85rem; color: #64748B; background: #F1F5F9; padding: 4px 12px; border-radius: 6px; font-weight: 600;">
+            Custom Date, Time &amp; Audit Reason Tracking Active
+          </span>
+        </div>
+        <form id="markForm" class="mark-form">
+          <div class="form-row" style="flex-wrap: wrap; gap: 15px; margin-bottom: 12px;">
+            <div class="form-group" style="flex: 2; min-width: 180px;">
+              <label for="m_enroll">Student Enrollment Number *</label>
+              <input id="m_enroll" type="text" placeholder="e.g. MUR2300415 or MUR2300416" required autocomplete="off">
+            </div>
+            <div class="form-group" style="flex: 1.2; min-width: 150px;">
+              <label for="m_date">Attendance Date *</label>
+              <input id="m_date" type="date" required>
+            </div>
+            <div class="form-group" style="flex: 1.1; min-width: 130px;">
+              <label for="m_time">Class In-Time *</label>
+              <input id="m_time" type="time" step="1" required>
+            </div>
+            <div class="form-group" style="flex: 1.1; min-width: 130px;">
+              <label for="m_status">Status</label>
+              <select id="m_status">
+                <option value="Present">Present</option>
+                <option value="Late">Late Entry</option>
+                <option value="Absent">Absent</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 2; min-width: 220px;">
+              <label for="m_reason">Reason for Manual Marking</label>
+              <select id="m_reason" required>
+                <option value="Face Not Detected by Camera">📷 Face Not Detected by Camera</option>
+                <option value="Late Entry with Permission">⏰ Late Entry with Permission</option>
+                <option value="Sent Outside on Faculty/Official Task">📋 Sent Outside on Faculty/Official Task</option>
+                <option value="Medical / Health Excuse Approved">🏥 Medical / Health Excuse Approved</option>
+                <option value="Camera Lighting / Angle Obstruction">💡 Camera Lighting / Angle Obstruction</option>
+                <option value="Direct Faculty Adjustment">✍️ Direct Faculty Adjustment</option>
+                <option value="Other Exemption">📝 Other Exemption (See Note Below)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+            <div class="form-group" style="flex: 3; min-width: 260px;">
+              <label for="m_custom_remark">Optional Audit Note / Specific Remark</label>
+              <input id="m_custom_remark" type="text" placeholder="e.g. Camera obscured; physically verified in classroom">
+            </div>
+            <div class="form-group" style="flex: 2; min-width: 220px; display: flex; align-items: center; padding-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem; color: #475569;">
+                <input type="checkbox" id="m_override" checked>
+                <span>⚡ <strong>Direct Override</strong> (Mark anytime without timetable block)</span>
+              </label>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 160px;">
+              <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">✅ Submit Record</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Current Class Timetable Card -->
+      <div class="card current-class-card" id="currentClassCard">
+        <h3>🎯 Timetable Status</h3>
+        <div id="currentClassInfo" class="current-class-info">
+          <p class="loading-text">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Attendance Table with Date Filter & Delete Action -->
+      <div class="card" style="background: white; border: 1px solid var(--card-border);">
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+          <h3 id="tableTitle" style="color: #0F172A; margin: 0;">📋 Subject Attendance Records</h3>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #F1F5F9; padding: 4px 10px; border-radius: 8px; border: 1px solid #CBD5E1;">
+              <span style="font-size: 0.84rem; font-weight: 600; color: #475569;">📅 Filter Date:</span>
+              <input type="date" id="attDateFilter" onchange="filterAttendanceByDate()" style="padding: 4px 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.84rem; outline: none; background: #FFFFFF;">
+              <button type="button" onclick="clearAttDateFilter()" class="btn btn-small btn-secondary" style="padding: 3px 8px; font-size: 0.78rem;">Show All</button>
+            </div>
+            <a href="/api/teacher/export_report?period=daily" target="_blank" class="btn btn-small btn-success" style="background: #10B981; color: white; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;">
+              <span>📥</span> Download Today's Sheet (.xlsx)
+            </a>
+            <button id="refreshBtn" class="btn btn-small btn-secondary">🔄 Refresh Table</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="allTable">
+            <thead>
+              <tr>
+                <th>Enrollment</th>
+                <th>Student Name</th>
+                <th>Date</th>
+                <th>Exact Marked Time</th>
+                <th>Status</th>
+                <th>Method / Marked By</th>
+                <th>Official Remarks / Reason</th>
+                <th>Confidence</th>
+                <th>Capture</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="noData" class="no-data" style="display:none;">
+            <p>No records found</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: STUDENT REGISTRATION & DATASET CAPTURE ==================== -->
+    <div id="tab-enrollment" class="main-tab-content" style="display: none;">
+      
+      <div class="enrollment-panel">
+        <h3 style="font-size: 1.3rem; font-weight: 700; color: #0F172A; margin-bottom: 6px;">
+          📸 Student Registration &amp; Automated Face Dataset Enrollment
+        </h3>
+        <p style="color: #64748B; font-size: 0.95rem; margin-bottom: 20px;">
+          Register a new student, create their account credentials, automatically create their <code>Dataset/MUR..._Name/</code> folder, and run ArcFace AI to extract distance-categorized face embeddings instantly!
+        </p>
+
+        <form id="addStudentEnrollForm">
+          <div class="form-grid-2" style="margin-bottom: 20px;">
+            <div class="form-group">
+              <label for="reg_enroll">Enrollment / Roll No *</label>
+              <input id="reg_enroll" type="text" placeholder="e.g. MUR2300418" required>
+            </div>
+            <div class="form-group">
+              <label for="reg_name">Student Full Name *</label>
+              <input id="reg_name" type="text" placeholder="e.g. Priyanshu Sharma" required>
+            </div>
+            <div class="form-group">
+              <label for="reg_class">Class / Cohort *</label>
+              <input id="reg_class" type="text" value="B.Tech CSE - 7th Sem" readonly style="background: #F1F5F9; color: #1E293B; font-weight: 600;" title="Default Cohort: B.Tech CSE - 7th Sem">
+              <small style="color: #64748B; font-size: 0.78rem;">Locked to current university cohort: B.Tech CSE - 7th Sem (no manual typing needed)</small>
+            </div>
+            <div class="form-group">
+              <label for="reg_user">Login Username *</label>
+              <input id="reg_user" type="text" placeholder="e.g. priyanshu" required>
+            </div>
+            <div class="form-group">
+              <label for="reg_pass">Login Password *</label>
+              <input id="reg_pass" type="text" placeholder="e.g. pass123" required>
+            </div>
+            <div class="form-group">
+              <label for="reg_parent_phone">Parent WhatsApp / Mobile No *</label>
+              <input id="reg_parent_phone" type="tel" placeholder="e.g. 7737147832" required>
+            </div>
+          </div>
+
+          <!-- Photo Enrollment Options -->
+          <h4 style="font-size: 1rem; color: #1E293B; margin-bottom: 8px;">
+            🎯 Face Dataset Photos (Choose Method):
+          </h4>
+
+          <div class="enroll-mode-selector">
+            <button type="button" class="enroll-mode-btn active" id="btnModeUpload" onclick="setEnrollMode('upload')">
+              <span>📁</span> Upload Multi-Angle Photos
+            </button>
+            <button type="button" class="enroll-mode-btn" id="btnModeCamera" onclick="setEnrollMode('camera')">
+              <span>📸</span> Capture with Browser Webcam (5 Angles)
+            </button>
+          </div>
+
+          <!-- Mode 1: File Upload -->
+          <div id="enrollBoxUpload">
+            <div class="webcam-capture-box">
+              <div style="font-size: 2.2rem; margin-bottom: 8px;">📂</div>
+              <p style="font-weight: 600; color: #334155; margin-bottom: 4px;">Select 3 to 15 student photos (different angles/distances)</p>
+              <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 12px;">Supports JPG, PNG. Will be saved to <code>Dataset/{Enrollment}_{Name}/</code></p>
+              <input type="file" id="filePhotos" accept="image/*" multiple style="display: block; margin: 0 auto;">
+            </div>
+          </div>
+
+          <!-- Mode 2: Live Browser Camera Burst Capture -->
+          <div id="enrollBoxCamera" style="display: none;">
+            <div class="webcam-capture-box">
+              <div style="position: relative; max-width: 480px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #000;">
+                <video id="burstVideo" autoplay playsinline style="width: 100%; height: 280px; object-fit: cover;"></video>
+                <canvas id="burstCanvas" style="display: none;"></canvas>
+              </div>
+
+              <div style="margin-top: 15px;">
+                <button type="button" id="btnSnapPhoto" class="btn btn-primary" onclick="captureLiveSnapshot()">
+                  <span>📸 Click to Capture Face (<span id="snapCountText">0/5</span>)</span>
+                </button>
+                <button type="button" class="btn btn-small btn-secondary" onclick="resetSnapshots()" style="margin-left: 8px;">
+                  🔄 Reset Shots
+                </button>
+              </div>
+
+              <div class="snapshots-gallery" id="snapshotsGallery"></div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div style="margin-top: 25px;">
+            <button type="submit" id="btnSubmitStudent" class="btn btn-primary btn-large" style="width: 100%;">
+              <span>✨ Complete Registration &amp; Generate Face Embeddings</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Enrolled Students & Credentials Table -->
+      <div class="card" style="background: white; border: 1px solid var(--card-border);">
+        <div class="card-header">
+          <h3 style="color: #0F172A;">👥 Enrolled Students &amp; Credentials List</h3>
+          <button onclick="loadStudentsList()" class="btn btn-small btn-secondary">🔄 Refresh</button>
+        </div>
+        <div class="table-container">
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Enrollment No</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Parent Contact</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="studentsListTableBody">
+              <tr><td colspan="7" style="text-align: center;">Loading students...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 4: EXCEL ATTENDANCE REGISTERS ==================== -->
+    <div id="tab-reports" class="main-tab-content" style="display: none;">
+      <div class="card" style="background: white; border: 1px solid var(--card-border);">
+        <div class="card-header" style="border-bottom: 1px solid var(--card-border); padding-bottom: 15px; margin-bottom: 20px;">
+          <div>
+            <h3 style="color: #1B365D; font-size: 1.4rem; font-weight: 700;">📥 Official College Attendance Registers &amp; Biometric Audit Sheets</h3>
+            <p style="color: #64748B; font-size: 0.95rem; margin-top: 4px; margin-bottom: 0;">
+              Download verified Microsoft Excel (.xlsx) attendance registers formatted according to University Academic Board standards with color-coded daily matrices, attendance percentages, exam eligibility statuses, and student in-time timestamps.
+            </p>
+          </div>
+        </div>
+
+        <!-- Academic Report Summary Ribbon -->
+        <div class="report-stat-ribbon">
+          <div class="report-stat-card">
+            <div class="report-stat-icon">👥</div>
+            <div>
+              <div class="report-stat-title">Enrolled Students</div>
+              <div class="report-stat-value" id="repSummaryStudents">0</div>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-icon">📅</div>
+            <div>
+              <div class="report-stat-title">Conducted Lectures</div>
+              <div class="report-stat-value" id="repSummarySessions">0</div>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-icon">📊</div>
+            <div>
+              <div class="report-stat-title">Class Average</div>
+              <div class="report-stat-value" id="repSummaryAvg">0%</div>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-icon" style="background: #FEF2F2; color: #DC2626;">🚨</div>
+            <div>
+              <div class="report-stat-title">Defaulters (&lt;75%)</div>
+              <div class="report-stat-value" id="repSummaryDefaulters" style="color: #DC2626;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Class-Wide Export Grid -->
+        <h4 style="font-size: 1.1rem; color: #0F172A; font-weight: 700; margin-bottom: 14px;">
+          📚 Class-Wide Attendance Register Sheets:
+        </h4>
+        <div class="export-grid">
+          <div class="export-option-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 2.2rem;">📄</span>
+                <span style="background: #E0E7FF; color: #3730A3; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">DAILY</span>
+              </div>
+              <div class="export-title">Daily Attendance Sheet</div>
+              <div class="export-desc">Exports today's attendance session with student names, roll numbers, status (Present / Late / Absent), and in-time.</div>
+            </div>
+            <a href="/api/teacher/export_report?period=daily" target="_blank" class="btn-excel">
+              <span>📥</span> Download Daily (.xlsx)
+            </a>
+          </div>
+
+          <div class="export-option-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 2.2rem;">📅</span>
+                <span style="background: #DCFCE7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">7 DAYS</span>
+              </div>
+              <div class="export-title">Weekly Attendance Register</div>
+              <div class="export-desc">7-day matrix sheet showing day-by-day attendance for every student in your subject with weekly present counts.</div>
+            </div>
+            <a href="/api/teacher/export_report?period=weekly" target="_blank" class="btn-excel">
+              <span>📥</span> Download Weekly (.xlsx)
+            </a>
+          </div>
+
+          <div class="export-option-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 2.2rem;">📆</span>
+                <span style="background: #FEF3C7; color: #92400E; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">30 DAYS</span>
+              </div>
+              <div class="export-title">Monthly Attendance Register</div>
+              <div class="export-desc">Complete 30-day matrix register with student attendance % and mandatory 75% exam eligibility calculations.</div>
+            </div>
+            <a href="/api/teacher/export_report?period=monthly" target="_blank" class="btn-excel">
+              <span>📥</span> Download Monthly (.xlsx)
+            </a>
+          </div>
+
+          <div class="export-option-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 2.2rem;">📑</span>
+                <span style="background: #F1F5F9; color: #334155; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">SEMESTER</span>
+              </div>
+              <div class="export-title">Full Semester Register</div>
+              <div class="export-desc">Complete historical academic attendance register across all conducted sessions from Day 1 to till date.</div>
+            </div>
+            <a href="/api/teacher/export_report?period=all" target="_blank" class="btn-excel">
+              <span>📥</span> Download Full Register (.xlsx)
+            </a>
+          </div>
+        </div>
+
+        <!-- 5th Dedicated Card: Single Student In-Time Attendance Audit Sheet -->
+        <div class="single-student-audit-card">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 1.5rem;">👤</span>
+              <h4 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #065F46;">Individual Student In-Time &amp; Entry Audit Sheet</h4>
+              <span style="background: #047857; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">PER-STUDENT AUDIT</span>
+            </div>
+            <p style="color: #475569; font-size: 0.9rem; margin: 0; max-width: 650px;">
+              Download a complete session-by-session entry history sheet for any specific student. Shows exact classroom in-time (e.g. 05:07 PM), AI Face Biometric verification confidence, status, and parents' mobile number.
+            </p>
+          </div>
+
+          <div class="audit-selector-box">
+            <select id="singleStudentSelect" class="audit-select-dropdown">
+              <option value="">-- Select Student to Audit --</option>
+            </select>
+            <button onclick="downloadSingleStudentReport()" class="btn btn-primary" style="background: #059669; border: none; padding: 11px 20px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              <span>📥 Download In-Time Log (.xlsx)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Formatting Legend & University Rules Guide -->
+        <div class="register-legend-container">
+          <h5 style="margin: 0 0 8px 0; font-size: 0.9rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+            📋 Excel Attendance Sheet Color &amp; Marking Key:
+          </h5>
+          <div class="legend-pills-row">
+            <div class="legend-badge-item" style="background: #D4EDDA; color: #155724; border-color: #C3E6CB;">
+              <span>✅</span> <strong>Present (P):</strong> Marked present via AI Face Biometrics or Faculty Override
+            </div>
+            <div class="legend-badge-item" style="background: #FFF3CD; color: #856404; border-color: #FFEEBA;">
+              <span>⚠️</span> <strong>Late Entry (L):</strong> Marked late but counted towards attendance credit
+            </div>
+            <div class="legend-badge-item" style="background: #F8D7DA; color: #721C24; border-color: #F5C6CB;">
+              <span>❌</span> <strong>Absent (A):</strong> Student was not recognized in class session
+            </div>
+            <div class="legend-badge-item" style="background: #EFF6FF; color: #1E40AF; border-color: #DBEAFE;">
+              <span>🎯</span> <strong>75% University Benchmark:</strong> Mandatory threshold for end-semester admit card eligibility
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== MODAL: PARENT WHATSAPP / SMS NOTICE ==================== -->
+  <div class="modal-backdrop-custom" id="noticeModal">
+    <div class="notice-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 1.2rem; color: #0F172A;">📲 Parent Attendance Warning Notice</h3>
+        <button onclick="closeNoticeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748B;">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 0.85rem; font-weight: 700; color: #475569;">Parent WhatsApp / Mobile Number:</label>
+        <input type="text" id="parentPhoneInput" placeholder="e.g. 919876543210 (with country code)" style="width: 100%; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 8px; margin-top: 4px;">
+      </div>
+
+      <label style="font-size: 0.85rem; font-weight: 700; color: #475569;">Generated Warning Message:</label>
+      <textarea id="noticeTextArea" class="notice-preview-textarea" readonly></textarea>
+
+      <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <a id="modalDownloadLogBtn" href="#" target="_blank" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; background: #F1F5F9; color: #1E293B; border: 1px solid #CBD5E1;">
+          <span style="color:#10B981;">📥</span> <span id="modalDownloadBtnText">Download Entry Log (.xlsx)</span>
+        </a>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="copyNoticeText()" class="btn btn-secondary">
+            <span>📋 Copy Notice</span>
+          </button>
+          <button onclick="sendWhatsAppNotice()" class="btn btn-action-whatsapp" style="padding: 10px 18px; font-size: 0.95rem;">
+            <span>🟢 Open in WhatsApp</span>
+          </button>
         </div>
       </div>
     </div>
@@ -169,6 +1332,38 @@
   <script>
     let currentUser = null;
     let recognitionInterval = null;
+    let currentAnalyticsPeriod = 'all';
+    let trendChartInstance = null;
+    let distChartInstance = null;
+    let dayOfWeekChartInstance = null;
+    let studentBarChartInstance = null;
+    let burstStream = null;
+    let capturedSnapshots = [];
+
+    // Tab Navigation
+    function switchMainTab(tabId) {
+      document.querySelectorAll('.main-tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.style.display = 'block';
+
+      event.currentTarget.classList.add('active');
+
+      if (tabId === 'analytics') {
+        loadAnalyticsData();
+      } else if (tabId === 'enrollment' || tabId === 'reports') {
+        loadStudentsList();
+      }
+    }
+
+    // Analytics Period Filter
+    function setAnalyticsPeriod(period, btn) {
+      currentAnalyticsPeriod = period;
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadAnalyticsData();
+    }
 
     async function loadUserData() {
       const u = await (await fetch('/api/current_user')).json();
@@ -180,505 +1375,813 @@
       document.getElementById('welcome').innerText = `Welcome, ${currentUser.name || currentUser.username}`;
       
       if (currentUser.subject) {
-        document.getElementById('subjectInfo').textContent = `Managing: ${currentUser.subject}`;
-        document.getElementById('tableTitle').textContent = `📋 ${currentUser.subject} - Attendance Records`;
+        document.getElementById('subjectInfo').textContent = `Assigned Course: ${currentUser.subject} | Faculty In-Charge: ${currentUser.name || currentUser.username}`;
+        document.getElementById('tableTitle').textContent = `📋 ${currentUser.subject} — Attendance Records`;
       }
       
+      initDateTimeInputs();
       await loadCurrentClass();
       await loadAttendance();
+      await loadAnalyticsData();
+      await loadStudentsList();
       startRecognitionPolling();
+      checkWebcamStatus();
+      setInterval(loadCurrentClass, 10000); // Live sync class timetable every 10s
     }
 
     async function loadCurrentClass() {
       try {
-        const res = await fetch('/api/current_subject');
+        const res = await fetch('/api/teacher/class_status');
         const data = await res.json();
         const infoDiv = document.getElementById('currentClassInfo');
+        const badge = document.getElementById('timetableStatusBadge');
+        const banner = document.getElementById('cameraClassStatusBanner');
+        const bannerIcon = document.getElementById('bannerIcon');
+        const bannerTitle = document.getElementById('bannerTitle');
+        const bannerSubtitle = document.getElementById('bannerSubtitle');
+        const bannerBadge = document.getElementById('bannerBadge');
         
         if (data.success) {
-          const isMySubject = currentUser.subject === data.subject;
-          infoDiv.innerHTML = `
-            <div class="class-info ${isMySubject ? 'my-class' : 'other-class'}">
-              <div class="class-row">
-                <span class="class-label">Subject:</span>
-                <span class="class-value">${data.subject}</span>
-                ${isMySubject ? '<span class="my-badge">Your Class</span>' : ''}
-              </div>
-              <div class="class-row">
-                <span class="class-label">Time:</span>
-                <span class="class-value">${data.start_time} - ${data.end_time}</span>
-              </div>
-              ${data.teacher ? `<div class="class-row">
-                <span class="class-label">Teacher:</span>
-                <span class="class-value">${data.teacher}</span>
-              </div>` : ''}
-              ${data.room ? `<div class="class-row">
-                <span class="class-label">Room:</span>
-                <span class="class-value">${data.room}</span>
-              </div>` : ''}
-            </div>
-          `;
+          const hasClassNow = Boolean(data.is_scheduled_now);
           
-          // Show warning if not teacher's subject
-          if (!isMySubject) {
-            infoDiv.innerHTML += `
-              <div class="warning-message">
-                ⚠️ This is not your subject. You can only mark attendance for: <strong>${currentUser.subject}</strong>
-              </div>
-            `;
+          // Update Status Banner
+          if (banner) {
+            banner.className = `class-status-banner ${hasClassNow ? 'banner-live' : 'banner-testing'}`;
+            if (bannerIcon) bannerIcon.textContent = hasClassNow ? '🟢' : '⚠️';
+            if (bannerTitle) bannerTitle.textContent = data.title || (hasClassNow ? '🟢 LIVE ATTENDANCE ACTIVE' : '⚠️ PREVIEW / TESTING MODE ONLY');
+            if (bannerSubtitle) bannerSubtitle.textContent = data.message || '';
+            if (bannerBadge) {
+              bannerBadge.className = `banner-badge ${hasClassNow ? 'badge-live' : 'badge-testing'}`;
+              bannerBadge.textContent = hasClassNow ? '🟢 LIVE ATTENDANCE' : '⚠️ PREVIEW / TESTING';
+            }
           }
-        } else {
-          infoDiv.innerHTML = '<p class="no-class">📅 No class running currently</p>';
+
+          // Update Quick Header Badge
+          if (badge) {
+            if (hasClassNow) {
+              badge.textContent = `🟢 Live Class: ${data.teacher_subject}`;
+              badge.style.background = '#065F46';
+              badge.style.color = '#FFFFFF';
+              badge.style.border = '1px solid #10B981';
+            } else if (data.current_class) {
+              badge.textContent = `🟡 Running: ${data.current_class.subject}`;
+              badge.style.background = '#92400E';
+              badge.style.color = '#FFFFFF';
+              badge.style.border = '1px solid #F59E0B';
+            } else {
+              badge.textContent = `⚪ Free Period / Camera Preview`;
+              badge.style.background = '#1E293B';
+              badge.style.color = '#FFFFFF';
+              badge.style.border = '1px solid #64748B';
+            }
+          }
+
+          // Update Current Class Info Box
+          if (infoDiv) {
+            if (data.current_class) {
+              const lec = data.current_class;
+              const isMySub = hasClassNow;
+              infoDiv.innerHTML = `
+                <div class="class-info ${isMySub ? 'my-class' : 'other-class'}">
+                  <div class="class-row">
+                    <span class="class-label">Scheduled Subject:</span>
+                    <strong class="class-value">${lec.subject}</strong>
+                    ${isMySub ? '<span class="my-badge">✅ Your Scheduled Lecture (Live Marked)</span>' : `<span class="other-badge">❌ Faculty: ${lec.teacher || 'Assigned'} (Preview Only)</span>`}
+                  </div>
+                  <div class="class-row">
+                    <span class="class-label">Lecture Slot:</span>
+                    <span class="class-value">Time: ${lec.start_time} - ${lec.end_time}</span>
+                  </div>
+                  ${lec.room ? `<div class="class-row"><span class="class-label">Classroom / Lab:</span><span class="class-value">Room ${lec.room}</span></div>` : ''}
+                </div>
+              `;
+            } else {
+              infoDiv.innerHTML = `
+                <p class="no-class">📅 No university lecture scheduled right now. Camera operates in <strong>Preview / Testing Mode</strong> without auto-marking. Use manual attendance below to mark unscheduled lectures with reasons.</p>
+              `;
+            }
+          }
         }
-      } catch (error) {
-        console.error('Error loading current class:', error);
+      } catch (e) {
+        console.error(e);
       }
     }
 
-    async function loadAttendance() {
+    // ==================== REAL-WORLD ANALYTICS ====================
+
+    async function loadAnalyticsData() {
       try {
-        const res = await fetch('/api/teacher/attendance');
+        const res = await fetch(`/api/teacher/analytics?period=${currentAnalyticsPeriod}`);
         const data = await res.json();
-        
-        if (data.success) {
-          renderStatistics(data.statistics);
-          renderAttendanceTable(data.records);
+        if (!data.success) return;
+
+        // KPI Numbers
+        document.getElementById('kpi-students').textContent = data.kpi.total_students;
+        document.getElementById('kpi-avg-pct').textContent = `${data.kpi.avg_attendance_pct}%`;
+        document.getElementById('kpi-sessions').textContent = data.kpi.total_sessions;
+        document.getElementById('kpi-defaulters').textContent = data.kpi.defaulters_count;
+        document.getElementById('trendSubTitle').textContent = `Period: ${currentAnalyticsPeriod.toUpperCase()}`;
+
+        // Tab 4 Report Ribbon Summary
+        if (document.getElementById('repSummaryStudents')) document.getElementById('repSummaryStudents').textContent = data.kpi.total_students;
+        if (document.getElementById('repSummarySessions')) document.getElementById('repSummarySessions').textContent = data.kpi.total_sessions;
+        if (document.getElementById('repSummaryAvg')) document.getElementById('repSummaryAvg').textContent = `${data.kpi.avg_attendance_pct}%`;
+        if (document.getElementById('repSummaryDefaulters')) document.getElementById('repSummaryDefaulters').textContent = data.kpi.defaulters_count;
+
+        // Bunk badge
+        const bunkBadge = document.getElementById('bunkInsightBadge');
+        if (data.kpi.peak_bunk_day && data.kpi.peak_bunk_day !== 'None') {
+          bunkBadge.textContent = `Peak Absenteeism: ${data.kpi.peak_bunk_day}`;
+        } else {
+          bunkBadge.textContent = `Attendance Balanced`;
         }
-      } catch (error) {
-        console.error('Error loading attendance:', error);
+
+        // Render Charts
+        renderTrendChart(data.daily_trend);
+        renderDistributionChart(data.status_distribution);
+        renderDayOfWeekChart(data.day_of_week);
+        renderStudentBarChart(data.student_stats);
+        renderDefaulterTable(data.student_stats);
+
+      } catch (err) {
+        console.error('Analytics load error:', err);
       }
     }
 
-    function renderStatistics(stats) {
-      const statsGrid = document.getElementById('statsGrid');
-      statsGrid.innerHTML = '';
+    function renderTrendChart(trendData) {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (trendChartInstance) trendChartInstance.destroy();
 
-      const statCards = [
-        { label: 'Total Students', value: stats.total_students || 0, icon: '👥', color: '#4CAF50' },
-        { label: 'Total Attendance', value: stats.total_attendance || 0, icon: '✅', color: '#2196F3' },
-        { label: 'Days Tracked', value: stats.total_days || 0, icon: '📅', color: '#FF9800' }
-      ];
+      const labels = trendData.map(d => d.display_date);
+      const rates = trendData.map(d => d.attendance_rate || 0);
 
-      statCards.forEach(stat => {
-        const card = document.createElement('div');
-        card.className = 'stat-card';
-        card.style.borderLeft = `4px solid ${stat.color}`;
-        card.innerHTML = `
-          <div class="stat-icon">${stat.icon}</div>
-          <div class="stat-content">
-            <div class="stat-value">${stat.value}</div>
-            <div class="stat-label">${stat.label}</div>
-          </div>
-        `;
-        statsGrid.appendChild(card);
+      // Gradient background
+      const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+      gradient.addColorStop(0, 'rgba(37, 99, 235, 0.4)');
+      gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Attendance Rate %',
+            data: rates,
+            borderColor: '#2563EB',
+            borderWidth: 3,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#1D4ED8',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { callback: v => v + '%' }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
       });
     }
 
-    function renderAttendanceTable(records) {
-      const tbody = document.querySelector('#allTable tbody');
-      const noData = document.getElementById('noData');
-      
+    function renderDistributionChart(dist) {
+      const ctx = document.getElementById('distributionChart').getContext('2d');
+      if (distChartInstance) distChartInstance.destroy();
+
+      distChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Present', 'Absent', 'Late'],
+          datasets: [{
+            data: [dist.present || 0, dist.absent || 0, dist.late || 0],
+            backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+            borderWidth: 3,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    function renderDayOfWeekChart(dowData) {
+      const ctx = document.getElementById('dayOfWeekChart').getContext('2d');
+      if (dayOfWeekChartInstance) dayOfWeekChartInstance.destroy();
+      if (!dowData) return;
+
+      const labels = dowData.map(d => d.short_day);
+      const attPcts = dowData.map(d => d.attendance_pct);
+      const bunkPcts = dowData.map(d => d.bunk_pct);
+
+      dayOfWeekChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Attendance Rate %',
+              data: attPcts,
+              backgroundColor: '#10B981',
+              borderRadius: 6
+            },
+            {
+              label: 'Absenteeism (Bunk) %',
+              data: bunkPcts,
+              backgroundColor: '#EF4444',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+          }
+        }
+      });
+    }
+
+    function renderStudentBarChart(students) {
+      const ctx = document.getElementById('studentBarChart').getContext('2d');
+      if (studentBarChartInstance) studentBarChartInstance.destroy();
+      if (!students) return;
+
+      const names = students.map(s => s.name);
+      const pcts = students.map(s => s.percentage);
+      const colors = students.map(s => s.percentage >= 75 ? '#10B981' : '#EF4444');
+
+      studentBarChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: names,
+          datasets: [{
+            label: 'Attendance %',
+            data: pcts,
+            backgroundColor: colors,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    function renderDefaulterTable(students) {
+      const tbody = document.getElementById('studentStatsTableBody');
       tbody.innerHTML = '';
-      
-      if (records.length === 0) {
-        noData.style.display = 'block';
+      if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No students found</td></tr>';
         return;
       }
 
-      noData.style.display = 'none';
-      
-      records.forEach(r => {
+      students.forEach(s => {
         const tr = document.createElement('tr');
-        const statusClass = r.status === 'Present' ? 'status-present' : 'status-absent';
-        const methodClass = r.recognized_by === 'auto_face' ? 'method-auto' : 'method-manual';
-        const confidence = (r.confidence * 100).toFixed(0);
-        
+        const isSafe = s.percentage >= 75;
+        const pill = isSafe 
+          ? `<span class="status-pill-safe">Eligible (≥ 75%)</span>` 
+          : `<span class="status-pill-danger">Defaulter Shortage (&lt; 75%)</span>`;
+
+        // The WhatsApp notice button ONLY appears for students with attendance < 75%
+        let actionButtonsHtml = '';
+        if (!isSafe) {
+          actionButtonsHtml = `
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button class="btn-action-whatsapp" onclick='openNoticeModal(${JSON.stringify(s)})' title="Send WhatsApp Warning Notice to Parent">
+                <span>📲 WhatsApp Notice</span>
+              </button>
+              <a href="/api/teacher/export_student_report?enrollment_no=${encodeURIComponent(s.enrollment_no)}" class="btn-action-excel-sm" title="Download In-Time Entry Log (.xlsx)">
+                <span>📥 In-Time Log (.xlsx)</span>
+              </a>
+            </div>
+          `;
+        } else {
+          actionButtonsHtml = `
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <span class="status-pill-safe" style="display: inline-flex; align-items: center; gap: 4px;">
+                <span>✅</span> Safe (≥ 75%)
+              </span>
+              <a href="/api/teacher/export_student_report?enrollment_no=${encodeURIComponent(s.enrollment_no)}" class="btn-action-excel-sm" title="Download In-Time Entry Log (.xlsx)">
+                <span>📥 In-Time Log (.xlsx)</span>
+              </a>
+            </div>
+          `;
+        }
+
         tr.innerHTML = `
-          <td>${r.enrollment_no}</td>
-          <td>${r.name}</td>
-          <td>${r.date}</td>
-          <td>${r.time}</td>
-          <td><span class="status-badge ${statusClass}">${r.status}</span></td>
-          <td><span class="method-badge ${methodClass}">${r.recognized_by === 'auto_face' ? '🤖 Auto' : '✏️ Manual'}</span></td>
-          <td>${confidence}%</td>
-          <td>${r.image_path ? `<a href="/static/${r.image_path}" target="_blank" class="view-image">View</a>` : '-'}</td>
+          <td><strong>${s.enrollment_no}</strong></td>
+          <td>${s.name}</td>
+          <td><strong>${s.attended}</strong> / ${s.total_classes}</td>
+          <td><strong style="color: ${isSafe ? '#10B981' : '#EF4444'}; font-size: 1rem;">${s.percentage}%</strong></td>
+          <td><span style="color: ${s.missed > 0 ? '#DC2626' : '#10B981'}; font-weight: 700;">${s.missed} Sessions</span></td>
+          <td>${pill}</td>
+          <td>${actionButtonsHtml}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
+    // ==================== PARENT WHATSAPP NOTICE MODAL ====================
+
+    let activeNoticeStudent = null;
+
+    function openNoticeModal(student) {
+      activeNoticeStudent = student;
+      const modal = document.getElementById('noticeModal');
+      const textarea = document.getElementById('noticeTextArea');
+      const phoneInput = document.getElementById('parentPhoneInput');
+      const downloadLogBtn = document.getElementById('modalDownloadLogBtn');
+      const downloadBtnText = document.getElementById('modalDownloadBtnText');
+
+      // Autofill Parent Phone
+      phoneInput.value = student.parent_phone || '';
+
+      // Direct Excel link for this student
+      if (downloadLogBtn) {
+        downloadLogBtn.href = `/api/teacher/export_student_report?enrollment_no=${encodeURIComponent(student.enrollment_no)}`;
+      }
+      if (downloadBtnText) {
+        downloadBtnText.textContent = `Download ${student.name}'s In-Time Log (.xlsx)`;
+      }
+
+      const facultyName = currentUser ? (currentUser.name || currentUser.username) : 'Faculty In-Charge';
+      const subjectName = currentUser ? currentUser.subject : 'Course';
+
+      // Notice message text explicitly stating attended vs total classes
+      const noticeText = `*ACADEMIC ATTENDANCE SHORTAGE NOTICE*
+Institution: Vision Mark College & University ERP
+Date: ${new Date().toLocaleDateString('en-GB')}
+
+Dear Parent / Guardian,
+This is an urgent official attendance warning regarding your ward:
+
+👤 *Student Name:* ${student.name}
+🆔 *Enrollment No:* ${student.enrollment_no}
+📚 *Subject:* ${subjectName}
+📊 *Attendance Status:* Attended ${student.attended} out of ${student.total_classes} classes (${student.percentage}%)
+⚠️ *Classes Missed:* ${student.missed} sessions
+🎯 *Mandatory Examination Requirement:* 75.0%
+
+*CRITICAL NOTICE:*
+As per University Academic Board regulations, a minimum 75% attendance is strictly compulsory to appear in the End-Semester Examination. Your ward's attendance (${student.percentage}%) is currently below the threshold and is classified under the *DEFAULTERS LIST*.
+
+An automated biometric audit log with exact entry timestamps has been recorded by the Vision Mark Face Recognition System. Please ensure your ward attends all remaining lectures to regularize their standing.
+
+Issued by:
+*${facultyName}*
+Faculty of Engineering & Technology
+Department of Computer Science`;
+
+      textarea.value = noticeText;
+      modal.classList.add('open');
+    }
+
+    function closeNoticeModal() {
+      document.getElementById('noticeModal').classList.remove('open');
+    }
+
+    function copyNoticeText() {
+      const textarea = document.getElementById('noticeTextArea');
+      textarea.select();
+      navigator.clipboard.writeText(textarea.value);
+      alert('Notice copied to clipboard!');
+    }
+
+    function sendWhatsAppNotice() {
+      const phone = document.getElementById('parentPhoneInput').value.trim().replace(/[^0-9]/g, '');
+      const text = encodeURIComponent(document.getElementById('noticeTextArea').value);
+      const url = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${text}` : `https://api.whatsapp.com/send?text=${text}`;
+      window.open(url, '_blank');
+    }
+
+    // ==================== IN-BROWSER VIDEO STREAM & RECOGNITION ====================
+
+    async function checkWebcamStatus() {
+      try {
+        const res = await (await fetch('/api/webcam_status')).json();
+        setWebcamUI(res.is_running);
+      } catch (e) {}
+    }
+
+    function setWebcamUI(isRunning) {
+      const img = document.getElementById('liveVideoFeed');
+      const placeholder = document.getElementById('noStreamMsg');
+      const liveBadge = document.getElementById('liveBadge');
+
+      if (isRunning) {
+        img.src = '/api/video_feed?' + new Date().getTime();
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+        liveBadge.style.display = 'inline-flex';
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+        liveBadge.style.display = 'none';
+      }
+    }
+
+    document.getElementById('startCamBtn').addEventListener('click', async () => {
+      const res = await (await fetch('/api/start_webcam', {method:'POST'})).json();
+      showToast(res.msg, res.success ? 'success' : 'error');
+      if (res.success) setWebcamUI(true);
+    });
+
+    document.getElementById('stopCamBtn').addEventListener('click', async () => {
+      const res = await (await fetch('/api/stop_webcam')).json();
+      showToast(res.msg, res.success ? 'success' : 'error');
+      setWebcamUI(false);
+    });
+
     function startRecognitionPolling() {
+      if (recognitionInterval) clearInterval(recognitionInterval);
       recognitionInterval = setInterval(async () => {
         try {
           const res = await fetch('/api/recent_recognitions');
           const data = await res.json();
-          renderRecentRecognitions(data.recognitions);
-        } catch (error) {
-          console.error('Error fetching recognitions:', error);
-        }
-      }, 3000); // Poll every 3 seconds
+          if (data.recognitions) {
+            document.getElementById('recentCount').textContent = data.recognitions.length;
+            const container = document.getElementById('recentRecognitions');
+            if (data.recognitions.length > 0) {
+              container.innerHTML = data.recognitions.slice(-8).reverse().map(r => `
+                <div class="recognition-item">
+                  <strong>${r.name}</strong> (${r.enrollment_no})<br>
+                  <small>${r.time} • ${(r.confidence*100).toFixed(0)}% AI match</small>
+                </div>
+              `).join('');
+            }
+          }
+        } catch (e) {}
+      }, 3000);
     }
 
-    function renderRecentRecognitions(recognitions) {
-      const container = document.getElementById('recentRecognitions');
-      const countBadge = document.getElementById('recentCount');
-      
-      countBadge.textContent = recognitions.length;
-      
-      if (recognitions.length === 0) {
-        container.innerHTML = '<p class="no-data">No recognitions yet. Start webcam to begin.</p>';
+    // Cached attendance records for instant client-side date filtering
+    let cachedAttendanceRecords = [];
+
+    function initDateTimeInputs() {
+      const now = new Date();
+      const mDate = document.getElementById('m_date');
+      const mTime = document.getElementById('m_time');
+      if (mDate && !mDate.value) {
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        mDate.value = `${yyyy}-${mm}-${dd}`;
+      }
+      if (mTime && !mTime.value) {
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const sec = String(now.getSeconds()).padStart(2, '0');
+        mTime.value = `${hh}:${min}:${sec}`;
+      }
+    }
+
+    // Manual Attendance with Custom Date, Time & Reason Tracking
+    document.getElementById('markForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const enrollVal = document.getElementById('m_enroll').value.trim();
+      if (!enrollVal) {
+        showToast('Please enter student enrollment number', 'error');
         return;
       }
 
-      container.innerHTML = '';
-      recognitions.reverse().forEach(rec => {
-        const item = document.createElement('div');
-        item.className = 'recognition-item';
-        item.innerHTML = `
-          <div class="rec-info">
-            <div class="rec-name">${rec.name}</div>
-            <div class="rec-details">
-              <span>🆔 ${rec.enrollment_no}</span>
-              <span>📚 ${rec.subject}</span>
-              <span>⏰ ${rec.time}</span>
-              <span>🎯 ${(rec.confidence * 100).toFixed(0)}%</span>
-            </div>
-          </div>
-          ${rec.image_path ? `<img src="/static/${rec.image_path}" alt="Face" class="rec-image">` : ''}
+      const fd = new FormData();
+      fd.append('enrollment_no', enrollVal);
+      fd.append('status', document.getElementById('m_status').value);
+      fd.append('override_timetable', document.getElementById('m_override').checked);
+      fd.append('remark_category', document.getElementById('m_reason').value);
+      fd.append('custom_remark', document.getElementById('m_custom_remark').value.trim());
+      
+      const attDateVal = document.getElementById('m_date').value;
+      const attTimeVal = document.getElementById('m_time').value;
+      if (attDateVal) fd.append('att_date', attDateVal);
+      if (attTimeVal) fd.append('att_time', attTimeVal);
+
+      try {
+        const res = await (await fetch('/api/mark_attendance', { method: 'POST', body: fd })).json();
+        showToast(res.msg, res.success ? 'success' : 'error');
+        if (res.success) {
+          document.getElementById('m_enroll').value = '';
+          document.getElementById('m_custom_remark').value = '';
+          initDateTimeInputs(); // Reset to current time
+          await loadAttendance();
+          await loadAnalyticsData();
+        }
+      } catch (err) {
+        showToast('Network error while recording attendance', 'error');
+      }
+    });
+
+    // Attendance Table with Exact In-Time, Reasons & Delete Action
+    async function loadAttendance() {
+      try {
+        const res = await (await fetch('/api/teacher/attendance')).json();
+        if (res.success) {
+          cachedAttendanceRecords = res.records || [];
+          
+          // Apply active date filter if selected
+          const activeFilter = document.getElementById('attDateFilter').value;
+          if (activeFilter) {
+            filterAttendanceByDate();
+          } else {
+            renderAttendanceRows(cachedAttendanceRecords);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading attendance:", e);
+      }
+    }
+
+    function renderAttendanceRows(records) {
+      const tbody = document.querySelector('#allTable tbody');
+      const noData = document.getElementById('noData');
+      tbody.innerHTML = '';
+      if (!records || records.length === 0) {
+        noData.style.display = 'block';
+        return;
+      }
+      noData.style.display = 'none';
+
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        const isAuto = (r.recognized_by || '').toLowerCase().includes('arcface') || 
+                       (r.recognized_by || '').toLowerCase().includes('biometric') || 
+                       (r.recognized_by || '').toLowerCase().includes('auto');
+        const methodBadge = isAuto 
+          ? `<span class="badge method-auto" style="display:inline-flex; align-items:center; gap:4px;">🤖 ${r.recognized_by}</span>`
+          : `<span class="badge" style="background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE; font-weight:700;">✍️ ${r.recognized_by}</span>`;
+        
+        const confDisplay = r.confidence ? `${(r.confidence * 100).toFixed(0)}%` : (isAuto ? '100%' : 'Manual');
+        const remarksText = r.remarks || (r.status === 'Present' ? 'Verified Present' : 'Absence recorded');
+        const statusClass = r.status === 'Present' ? 'status-present' : (r.status === 'Late' ? 'status-late' : 'status-absent');
+
+        tr.innerHTML = `
+          <td><strong>${r.enrollment_no}</strong></td>
+          <td>${r.name}</td>
+          <td>${r.date}</td>
+          <td><strong style="color: #1E3A8A; font-size: 0.92rem;">${r.time}</strong></td>
+          <td><span class="badge ${statusClass}">${r.status}</span></td>
+          <td>${methodBadge}</td>
+          <td style="max-width: 260px; font-size: 0.86rem; color: #334155; line-height: 1.35;">${remarksText}</td>
+          <td>${confDisplay}</td>
+          <td>${r.image_path ? `<a href="/static/${r.image_path.replace(/\\\\/g, '/')}" target="_blank" class="btn btn-small btn-secondary" style="padding: 2px 8px;">📷 View</a>` : '—'}</td>
+          <td>
+            <button type="button" onclick="deleteAttendanceRecord(${r.id}, '${r.enrollment_no}', '${r.date}')" class="btn btn-small btn-danger" style="padding: 4px 10px; font-size: 0.78rem; background: #EF4444; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Permanently delete this attendance record">
+              <span>🗑️ Delete</span>
+            </button>
+          </td>
         `;
-        container.appendChild(item);
+        tbody.appendChild(tr);
       });
     }
 
-    // Event Listeners
-    document.getElementById('startBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('startBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="loading"></span> Starting...';
-      
-      try {
-        const res = await fetch('/api/start_webcam', {method:'POST'});
-        const data = await res.json();
-        
-        if (data.success) {
-          alert('✅ ' + data.msg);
-          await loadCurrentClass();
-        } else {
-          alert('❌ ' + data.msg);
-        }
-      } catch (error) {
-        alert('❌ Error starting webcam');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="btn-icon">▶️</span><span>Start Recognition</span>';
-      }
-    });
-
-    document.getElementById('stopBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('stopBtn');
-      btn.disabled = true;
-      
-      try {
-        const res = await fetch('/api/stop_webcam');
-        const data = await res.json();
-        
-        if (data.success) {
-          alert('✅ ' + data.msg);
-        } else {
-          alert('❌ ' + data.msg);
-        }
-      } catch (error) {
-        alert('❌ Error stopping webcam');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    document.getElementById('refreshBtn').addEventListener('click', async () => {
-      await loadCurrentClass();
-      await loadAttendance();
-    });
-
-    // ============================================
-// UPDATED: Manual Attendance Marking Section
-// Add this to replace the existing manual marking code in teacher.html
-// ============================================
-
-document.getElementById('markForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const enrollBtn = e.target.querySelector('button[type="submit"]');
-  const enroll = document.getElementById('m_enroll').value.trim();
-  const status = document.getElementById('m_status').value;
-  
-  // Disable button during processing
-  enrollBtn.disabled = true;
-  enrollBtn.innerHTML = '<span class="loading"></span> Marking...';
-  
-  const form = new FormData();
-  form.append('enrollment_no', enroll);
-  form.append('status', status);
-  
-  try {
-    const res = await fetch('/api/mark_attendance', {method:'POST', body: form});
-    const data = await res.json();
-    
-    if(data.success) {
-      // ✅ SUCCESS - Show detailed message
-      showNotification('success', data.msg);
-      
-      // Clear form
-      document.getElementById('m_enroll').value = '';
-      
-      // Refresh attendance table
-      await loadAttendance();
-      
-    } else {
-      // ❌ ERROR - Show detailed error message
-      if (data.already_marked) {
-        // Special handling for duplicate marking
-        showNotification('warning', data.msg);
-      } else if (data.current_subject && data.teacher_subject) {
-        // Special handling for subject mismatch
-        showNotification('error', data.msg);
-      } else {
-        // Generic error
-        showNotification('error', data.msg);
-      }
-    }
-    
-  } catch (error) {
-    showNotification('error', '❌ Connection error. Please try again.');
-  } finally {
-    // Re-enable button
-    enrollBtn.disabled = false;
-    enrollBtn.innerHTML = '<span>✅ Mark Attendance</span>';
-  }
-});
-
-// ============================================
-// NEW: Notification Function (Add this to teacher.html)
-// ============================================
-function showNotification(type, message) {
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    max-width: 400px;
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    z-index: 10000;
-    animation: slideInRight 0.3s ease;
-  `;
-  
-  // Color based on type
-  const colors = {
-    'success': { bg: '#d4edda', border: '#28a745', text: '#155724' },
-    'error': { bg: '#f8d7da', border: '#dc3545', text: '#721c24' },
-    'warning': { bg: '#fff3cd', border: '#ffc107', text: '#856404' }
-  };
-  
-  const color = colors[type] || colors['error'];
-  notification.style.background = color.bg;
-  notification.style.borderLeft = `4px solid ${color.border}`;
-  notification.style.color = color.text;
-  
-  // Icon based on type
-  const icons = {
-    'success': '✅',
-    'error': '❌',
-    'warning': '⚠️'
-  };
-  
-  notification.innerHTML = `
-    <div style="display: flex; gap: 15px; align-items: start;">
-      <div style="font-size: 24px;">${icons[type]}</div>
-      <div style="flex: 1;">
-        <div style="font-weight: 600; margin-bottom: 5px;">${type.toUpperCase()}</div>
-        <div style="white-space: pre-wrap; line-height: 1.5;">${message}</div>
-      </div>
-      <button onclick="this.parentElement.parentElement.remove()" 
-              style="background: none; border: none; font-size: 20px; cursor: pointer; color: ${color.text};">
-        ×
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(notification);
-  
-  // Auto-remove after 5 seconds
-  setTimeout(() => {
-    notification.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 5000);
-}
-
-// ============================================
-// Add CSS animations (Add to <style> in head)
-// ============================================
-/*
-@keyframes slideInRight {
-  from {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideOutRight {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-}
-*/
-
-// ============================================
-// ENHANCED: Show current class info on page load
-// ============================================
-async function loadCurrentClass() {
-  try {
-    const res = await fetch('/api/current_subject');
-    const data = await res.json();
-    const infoDiv = document.getElementById('currentClassInfo');
-    
-    if (data.success) {
-      const isMySubject = currentUser.subject === data.subject;
-      
-      infoDiv.innerHTML = `
-        <div class="class-info ${isMySubject ? 'my-class' : 'other-class'}">
-          <div class="class-row">
-            <span class="class-label">Subject:</span>
-            <span class="class-value">${data.subject}</span>
-            ${isMySubject ? '<span class="my-badge">✅ Your Class</span>' : '<span class="other-badge">❌ Not Your Class</span>'}
-          </div>
-          <div class="class-row">
-            <span class="class-label">Time:</span>
-            <span class="class-value">${data.start_time} - ${data.end_time}</span>
-          </div>
-          ${data.teacher ? `<div class="class-row">
-            <span class="class-label">Teacher:</span>
-            <span class="class-value">${data.teacher}</span>
-          </div>` : ''}
-          ${data.room ? `<div class="class-row">
-            <span class="class-label">Room:</span>
-            <span class="class-value">${data.room}</span>
-          </div>` : ''}
-        </div>
-      `;
-      
-      // Show warning if not teacher's subject
-      if (!isMySubject) {
-        infoDiv.innerHTML += `
-          <div class="warning-message">
-            <strong>⚠️ IMPORTANT:</strong><br>
-            You can only mark attendance for your subject: <strong>${currentUser.subject}</strong><br>
-            Current class is: <strong>${data.subject}</strong>
-          </div>
-        `;
-      } else {
-        infoDiv.innerHTML += `
-          <div class="success-message">
-            ✅ You can mark attendance for this class
-          </div>
-        `;
-      }
-    } else {
-      infoDiv.innerHTML = `
-        <p class="no-class">📅 No class running currently</p>
-        <div class="info-message">
-          Your subject: <strong>${currentUser.subject}</strong><br>
-          You can only mark attendance when your class is running.
-        </div>
-      `;
-    }
-  } catch (error) {
-    console.error('Error loading current class:', error);
-  }
-}
-
-    // Image upload
-    document.getElementById('imageFile').addEventListener('change', (e) => {
-      const fileName = e.target.files[0]?.name || '';
-      document.getElementById('fileName').textContent = fileName;
-    });
-
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fileInput = document.getElementById('imageFile');
-      const resultsDiv = document.getElementById('testResults');
-      
-      if (!fileInput.files[0]) {
-        alert('Please select an image');
+    function filterAttendanceByDate() {
+      const filterVal = document.getElementById('attDateFilter').value;
+      if (!filterVal) {
+        renderAttendanceRows(cachedAttendanceRecords);
         return;
       }
-      
-      resultsDiv.innerHTML = '<p class="loading-text">Processing...</p>';
-      
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-      
-      try {
-        const res = await fetch('/api/test_image', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-          let html = `<div class="test-result-success">
-            <p><strong>✅ Faces Detected:</strong> ${data.faces_detected}</p>
-            <img src="${data.result_image}" alt="Result" class="result-image">
-            <div class="recognition-results">`;
-          
-          data.results.forEach((r, i) => {
-            html += `<div class="result-item">
-              <strong>Face ${i+1}:</strong>
-              ${r.recognized ? 
-                `<span class="recognized">✅ ${r.name} (${r.enrollment_no}) - ${(r.similarity*100).toFixed(1)}%</span>` :
-                `<span class="not-recognized">❌ Unknown - ${(r.similarity*100).toFixed(1)}%</span>`
-              }
-            </div>`;
-          });
-          
-          html += '</div></div>';
-          resultsDiv.innerHTML = html;
-        } else {
-          resultsDiv.innerHTML = `<p class="error-text">❌ ${data.msg}</p>`;
-        }
-      } catch (error) {
-        resultsDiv.innerHTML = '<p class="error-text">❌ Error processing image</p>';
+      const filtered = cachedAttendanceRecords.filter(r => r.raw_date === filterVal);
+      renderAttendanceRows(filtered);
+    }
+
+    function clearAttDateFilter() {
+      document.getElementById('attDateFilter').value = '';
+      renderAttendanceRows(cachedAttendanceRecords);
+    }
+
+    async function deleteAttendanceRecord(recordId, enrollNo, dateStr) {
+      if (!confirm(`Are you sure you want to permanently remove attendance record for ${enrollNo} on ${dateStr}?`)) {
+        return;
       }
-      
-      fileInput.value = '';
-      document.getElementById('fileName').textContent = '';
+      const fd = new FormData();
+      fd.append('record_id', recordId);
+      try {
+        const res = await (await fetch('/api/teacher/delete_attendance', { method: 'POST', body: fd })).json();
+        showToast(res.msg, res.success ? 'success' : 'error');
+        if (res.success) {
+          await loadAttendance();
+          await loadAnalyticsData();
+        }
+      } catch (err) {
+        showToast('Error deleting attendance record', 'error');
+      }
+    }
+
+    // ==================== STUDENT REGISTRATION & LIVE DATASET ====================
+
+    function setEnrollMode(mode) {
+      const btnUpload = document.getElementById('btnModeUpload');
+      const btnCamera = document.getElementById('btnModeCamera');
+      const boxUpload = document.getElementById('enrollBoxUpload');
+      const boxCamera = document.getElementById('enrollBoxCamera');
+
+      if (mode === 'upload') {
+        btnUpload.classList.add('active');
+        btnCamera.classList.remove('active');
+        boxUpload.style.display = 'block';
+        boxCamera.style.display = 'none';
+        stopBurstWebcam();
+      } else {
+        btnCamera.classList.add('active');
+        btnUpload.classList.remove('active');
+        boxCamera.style.display = 'block';
+        boxUpload.style.display = 'none';
+        startBurstWebcam();
+      }
+    }
+
+    async function startBurstWebcam() {
+      try {
+        burstStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+        document.getElementById('burstVideo').srcObject = burstStream;
+      } catch (err) {
+        alert('Could not access browser webcam: ' + err);
+      }
+    }
+
+    function stopBurstWebcam() {
+      if (burstStream) {
+        burstStream.getTracks().forEach(t => t.stop());
+        burstStream = null;
+      }
+    }
+
+    function captureLiveSnapshot() {
+      const video = document.getElementById('burstVideo');
+      const canvas = document.getElementById('burstCanvas');
+      if (!burstStream) return;
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      capturedSnapshots.push(dataUrl);
+
+      // Gallery thumb
+      const gallery = document.getElementById('snapshotsGallery');
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.className = 'snap-thumb';
+      gallery.appendChild(img);
+
+      document.getElementById('snapCountText').textContent = `${capturedSnapshots.length}/5`;
+    }
+
+    function resetSnapshots() {
+      capturedSnapshots = [];
+      document.getElementById('snapshotsGallery').innerHTML = '';
+      document.getElementById('snapCountText').textContent = '0/5';
+    }
+
+    document.getElementById('addStudentEnrollForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btnSubmitStudent');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⏳ Creating Dataset &amp; Generating ArcFace Embeddings...</span>';
+
+      const fd = new FormData();
+      fd.append('enrollment_no', document.getElementById('reg_enroll').value.trim());
+      fd.append('name', document.getElementById('reg_name').value.trim());
+      fd.append('class_name', document.getElementById('reg_class').value.trim());
+      fd.append('username', document.getElementById('reg_user').value.trim());
+      fd.append('password', document.getElementById('reg_pass').value.trim());
+      fd.append('parent_phone', document.getElementById('reg_parent_phone').value.trim());
+
+      // Files
+      const files = document.getElementById('filePhotos').files;
+      for (let i = 0; i < files.length; i++) {
+        fd.append('photos', files[i]);
+      }
+
+      // Camera snapshots
+      if (capturedSnapshots.length > 0) {
+        fd.append('camera_snapshots', JSON.stringify(capturedSnapshots));
+      }
+
+      try {
+        const res = await (await fetch('/api/teacher/add_student', { method: 'POST', body: fd })).json();
+        if (res.success) {
+          showToast(res.msg, 'success');
+          document.getElementById('addStudentEnrollForm').reset();
+          resetSnapshots();
+          loadStudentsList();
+          loadAnalyticsData();
+        } else {
+          showToast(res.msg, 'error');
+        }
+      } catch (err) {
+        showToast('Registration failed: ' + err, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>✨ Complete Registration &amp; Generate Face Embeddings</span>';
+      }
     });
 
+    async function loadStudentsList() {
+      try {
+        const res = await (await fetch('/api/teacher/students_list')).json();
+        const tbody = document.getElementById('studentsListTableBody');
+        const singleSelect = document.getElementById('singleStudentSelect');
+        tbody.innerHTML = '';
+        if (singleSelect) {
+          singleSelect.innerHTML = '<option value="">-- Select Student to Audit --</option>';
+        }
+        if (!res.students || res.students.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No registered students</td></tr>';
+          return;
+        }
+        res.students.forEach(s => {
+          if (singleSelect) {
+            const opt = document.createElement('option');
+            opt.value = s.enrollment_no;
+            opt.textContent = `${s.name} (${s.enrollment_no})`;
+            singleSelect.appendChild(opt);
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${s.enrollment_no}</strong></td>
+            <td>${s.name}</td>
+            <td>${s.class || '—'}</td>
+            <td>${s.parent_phone ? `<code>${s.parent_phone}</code>` : '<span style="color:#94A3B8;">—</span>'}</td>
+            <td><code>${s.username}</code></td>
+            <td>
+              <span id="pw-${s.id}">••••••••</span>
+              <button onclick="togglePassword(${s.id}, '${s.password}')" class="btn btn-small btn-secondary" style="padding: 2px 6px; margin-left: 5px;">👁️</button>
+            </td>
+            <td>
+              <button onclick="resetPasswordPrompt(${s.id}, '${s.name}')" class="btn btn-small btn-primary" style="padding: 4px 8px;">🔑 Reset</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {}
+    }
+
+    function downloadSingleStudentReport() {
+      const select = document.getElementById('singleStudentSelect');
+      const val = select ? select.value : '';
+      if (!val) {
+        alert('Please select a student from the dropdown to download their in-time attendance audit log.');
+        return;
+      }
+      window.open(`/api/teacher/export_student_report?enrollment_no=${encodeURIComponent(val)}`, '_blank');
+    }
+
+    function togglePassword(id, val) {
+      const el = document.getElementById(`pw-${id}`);
+      el.textContent = el.textContent === '••••••••' ? val : '••••••••';
+    }
+
+    async function resetPasswordPrompt(id, name) {
+      const np = prompt(`Enter new password for ${name}:`);
+      if (!np) return;
+      const fd = new FormData();
+      fd.append('student_id', id);
+      fd.append('new_password', np);
+      const res = await (await fetch('/api/teacher/reset_student_password', { method: 'POST', body: fd })).json();
+      showToast(res.msg, res.success ? 'success' : 'error');
+      if (res.success) loadStudentsList();
+    }
+
+    function showToast(msg, type = 'info') {
+      alert(msg);
+    }
+
     document.getElementById('logoutBtn').addEventListener('click', async () => {
-      if (recognitionInterval) clearInterval(recognitionInterval);
-      await fetch('/api/logout', {method:'POST'});
+      stopBurstWebcam();
+      await fetch('/api/logout', { method: 'POST' });
       location.href = '/';
     });
 
     // Initialize
     loadUserData();
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-      if (recognitionInterval) clearInterval(recognitionInterval);
-    });
   </script>
 </body>
 </html>

@@ -83,7 +83,8 @@ def insert_or_update_embedding(student_id, distance_category, embedding):
 #           1.jpg, 2.jpg, ...
 #       MUR2300416_Mahendra/
 #           1.jpg, 2.jpg, ...
-dataset_folder = r"C:\Users\suraj\Desktop\Project\Advance_Face_Detection_And_Recogination\pythonProject4\Dataset"
+FAR_DIR = os.path.dirname(os.path.abspath(__file__))
+dataset_folder = os.path.join(os.path.dirname(FAR_DIR), "Dataset")
 
 
 # ============================================
