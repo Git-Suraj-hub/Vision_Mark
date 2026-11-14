@@ -835,7 +835,9 @@ def api_mark_attendance(
                 conn.close()
                 return {
                     "success": False, 
-                    "msg": "❌ No class is running right now according to timetable.\n\nTip: Enable 'Direct Attendance Mode' if taking an extra/adjusted lecture."
+                    "msg": f"❌ Class Not Scheduled: Is samay aapki class nahi hai!\n\n"
+                           f"According to the official timetable, no lecture is scheduled on {current_day} at {exact_time_display} (Free Period / Off-Hours).\n\n"
+                           f"Please check the university timetable and select your scheduled lecture slot."
                 }
             
             current_subject = current_class['Subject']
@@ -851,10 +853,11 @@ def api_mark_attendance(
                 conn.close()
                 return {
                     "success": False,
-                    "msg": f"❌ Cannot mark attendance!\n\n"
-                           f"Current running class: {current_subject}\n"
-                           f"Your subject: {teacher_subject}\n\n"
-                           f"You can only mark attendance for your own subject.",
+                    "msg": f"❌ Timetable Conflict: Is samay aapki class nahi hai!\n\n"
+                           f"Selected Slot: {current_day} at {exact_time_display}\n"
+                           f"Scheduled Class: {current_subject} (Teacher: {current_class['Teacher']}, Room: {current_class['Room']})\n"
+                           f"Your Subject: {teacher_subject}\n\n"
+                           f"Attendance for '{teacher_subject}' cannot be marked right now. Please check the timetable and mark during your subject's scheduled slot.",
                     "current_subject": current_subject,
                     "teacher_subject": teacher_subject
                 }
@@ -891,9 +894,9 @@ def api_mark_attendance(
             cur.execute(f"""
                 SELECT * FROM {table_name}
                 WHERE Enrollment_No = %s
-                AND DATE(Attendance_DateTime) = CURDATE()
+                AND DATE(Attendance_DateTime) = DATE(%s)
                 AND TIME(Attendance_DateTime) BETWEEN %s AND %s
-            """, (enrollment_no, start_time, end_time))
+            """, (enrollment_no, now, start_time, end_time))
         else:
             # Direct mode: check within 20 minutes of target datetime
             cur.execute(f"""
@@ -1685,41 +1688,239 @@ async def api_teacher_add_student(
     username: str = Form(...),
     password: str = Form(...),
     parent_phone: Optional[str] = Form(None),
+    update_mode: Optional[str] = Form("new"),
     camera_snapshots: Optional[str] = Form(None),
     photos: List[UploadFile] = File(default=[]),
     session: Optional[str] = Cookie(None)
 ):
-    """Teacher adds a student, generates credentials, creates dataset folder, and auto-generates face embeddings"""
+    """
+    Teacher registers a new student OR updates an existing student's face dataset.
+    For existing students:
+      1. Verifies student username and password. If invalid, displays a security alert.
+      2. If valid and update_mode == 'new', prompts teacher to choose between:
+         - 'overwrite': Deletes old photos & embeddings, extracts fresh embeddings.
+         - 'merge': Keeps old photos, adds new photos, re-averages across all embeddings.
+      3. Live reloads multi-distance ArcFace model cache.
+    """
     user = get_session(session)
     if not user or user.get("role") != "teacher":
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     enrollment_no = enrollment_no.strip().upper()
     username = username.strip()
+    password = password.strip()
     name = name.strip()
     class_name = class_name.strip()
     parent_phone = parent_phone.strip() if parent_phone else None
+    update_mode = (update_mode or "new").strip().lower()
     
     if not enrollment_no or not username or not password or not name:
-        return {"success": False, "msg": "All fields are required!"}
+        return {"success": False, "msg": "All fields (Enrollment No, Name, Username, Password) are required!"}
     
     try:
         conn = get_db_conn()
         cur = conn.cursor(dictionary=True)
         
-        # Check if username or enrollment_no already exists
+        # Check if student exists by enrollment_no
+        cur.execute("SELECT * FROM students WHERE enrollment_no = %s", (enrollment_no,))
+        existing_student = cur.fetchone()
+        
+        if existing_student:
+            # ==========================================================
+            # EXISTING STUDENT WORKFLOW: VERIFY CREDENTIALS FIRST
+            # ==========================================================
+            if existing_student['username'] != username or existing_student['password'] != password:
+                cur.close()
+                conn.close()
+                return {
+                    "success": False,
+                    "is_auth_error": True,
+                    "student_name": existing_student['name'],
+                    "enrollment_no": enrollment_no,
+                    "msg": (
+                        "❌ Authentication Failed: Username and password do not match this student's account records!\n\n"
+                        "🔒 SECURITY NOTICE:\n"
+                        "Student credentials protect sensitive biometric face datasets and academic records. "
+                        "Never share these credentials with unauthorized persons as it exposes confidential user data. "
+                        "Please verify the student's registered credentials from the Enrolled Students list below. "
+                        "If credentials have been compromised or observed by someone else, generate/reset a new password immediately."
+                    )
+                }
+            
+            # Credentials are valid. Did teacher specify update_mode ('overwrite' or 'merge')?
+            if update_mode not in ('overwrite', 'merge'):
+                cur.close()
+                conn.close()
+                return {
+                    "success": False,
+                    "requires_choice": True,
+                    "student_name": existing_student['name'],
+                    "enrollment_no": enrollment_no,
+                    "current_username": existing_student['username'],
+                    "msg": f"Existing student profile verified for {existing_student['name']} ({enrollment_no}). Please choose whether to overwrite old embeddings or merge new photos."
+                }
+            
+            # Update student details
+            cur.execute("""
+                UPDATE students 
+                SET name = %s, class = %s, parent_phone = %s 
+                WHERE enrollment_no = %s
+            """, (name, class_name, parent_phone, enrollment_no))
+            
+            cur.execute("""
+                UPDATE student_detail 
+                SET Name = %s, parent_phone = %s 
+                WHERE Enrollment_No = %s
+            """, (name, parent_phone, enrollment_no))
+            
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '_', name).strip('_')
+            folder_name = f"{enrollment_no}_{clean_name}"
+            student_folder = os.path.join(DATASET_DIR, folder_name)
+            
+            if update_mode == 'overwrite':
+                # Delete existing embeddings from database
+                cur.execute("DELETE FROM student_embeddings WHERE Enrollment_No = %s", (enrollment_no,))
+                conn.commit()
+                
+                # Clear existing photos in folder
+                if os.path.exists(student_folder):
+                    for fname in os.listdir(student_folder):
+                        fpath = os.path.join(student_folder, fname)
+                        if os.path.isfile(fpath):
+                            try:
+                                os.remove(fpath)
+                            except Exception:
+                                pass
+                os.makedirs(student_folder, exist_ok=True)
+                
+                # Save new photos
+                saved_image_paths = []
+                img_counter = 1
+                for photo in photos:
+                    if photo and photo.filename:
+                        content = await photo.read()
+                        if len(content) > 0:
+                            ext = os.path.splitext(photo.filename)[1].lower() or ".jpg"
+                            if ext not in ('.jpg', '.jpeg', '.png'):
+                                ext = '.jpg'
+                            dest_file = os.path.join(student_folder, f"new_{img_counter}{ext}")
+                            with open(dest_file, "wb") as f:
+                                f.write(content)
+                            saved_image_paths.append(dest_file)
+                            img_counter += 1
+                
+                if camera_snapshots:
+                    try:
+                        snapshots_list = json.loads(camera_snapshots)
+                        for snap_str in snapshots_list:
+                            if ',' in snap_str:
+                                snap_str = snap_str.split(',', 1)[1]
+                            img_bytes = base64.b64decode(snap_str)
+                            dest_file = os.path.join(student_folder, f"new_snap_{img_counter}.jpg")
+                            with open(dest_file, "wb") as f:
+                                f.write(img_bytes)
+                            saved_image_paths.append(dest_file)
+                            img_counter += 1
+                    except Exception as snap_err:
+                        print(f"[WARN] Failed to process camera snapshots: {snap_err}")
+                
+                # Generate fresh ArcFace embeddings
+                embeddings_generated = 0
+                if saved_image_paths:
+                    res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
+                    embeddings_generated = res.get("total_faces", 0)
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    "success": True,
+                    "mode": "overwrite",
+                    "msg": (
+                        f"🔄 Face Dataset Successfully Replaced & Updated!\n\n"
+                        f"Student: {name} ({enrollment_no})\n"
+                        f"Status: Purani embeddings hata kar nayi photos lagayi gayi hain.\n"
+                        f"📸 Nayi Photos Stored: {len(saved_image_paths)}\n"
+                        f"⚡ Fresh Face Embeddings: {embeddings_generated}\n"
+                        f"Live recognition model refreshed instantly!"
+                    ),
+                    "photos_count": len(saved_image_paths),
+                    "embeddings_count": embeddings_generated
+                }
+            
+            else: # update_mode == 'merge'
+                os.makedirs(student_folder, exist_ok=True)
+                ts = int(time.time())
+                saved_image_paths = []
+                img_counter = 1
+                
+                for photo in photos:
+                    if photo and photo.filename:
+                        content = await photo.read()
+                        if len(content) > 0:
+                            ext = os.path.splitext(photo.filename)[1].lower() or ".jpg"
+                            if ext not in ('.jpg', '.jpeg', '.png'):
+                                ext = '.jpg'
+                            dest_file = os.path.join(student_folder, f"merge_{ts}_{img_counter}{ext}")
+                            with open(dest_file, "wb") as f:
+                                f.write(content)
+                            saved_image_paths.append(dest_file)
+                            img_counter += 1
+                
+                if camera_snapshots:
+                    try:
+                        snapshots_list = json.loads(camera_snapshots)
+                        for snap_str in snapshots_list:
+                            if ',' in snap_str:
+                                snap_str = snap_str.split(',', 1)[1]
+                            img_bytes = base64.b64decode(snap_str)
+                            dest_file = os.path.join(student_folder, f"merge_snap_{ts}_{img_counter}.jpg")
+                            with open(dest_file, "wb") as f:
+                                f.write(img_bytes)
+                            saved_image_paths.append(dest_file)
+                            img_counter += 1
+                    except Exception as snap_err:
+                        print(f"[WARN] Failed to process camera snapshots: {snap_err}")
+                
+                embeddings_generated = 0
+                if saved_image_paths:
+                    res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
+                    embeddings_generated = res.get("total_faces", 0)
+                
+                cur.execute("SELECT COUNT(*) as total_embs FROM student_embeddings WHERE Enrollment_No = %s", (enrollment_no,))
+                tot_row = cur.fetchone()
+                total_embs = tot_row['total_embs'] if tot_row else embeddings_generated
+                
+                cur.close()
+                conn.close()
+                
+                return {
+                    "success": True,
+                    "mode": "merge",
+                    "msg": (
+                        f"✨ Face Dataset Successfully Merged & Accuracy Enhanced!\n\n"
+                        f"Student: {name} ({enrollment_no})\n"
+                        f"Status: Purani photos ke saath nayi photos jodi gayi hain.\n"
+                        f"📸 Nayi Photos Added: {len(saved_image_paths)}\n"
+                        f"⚡ Naye Extracted Embeddings: {embeddings_generated}\n"
+                        f"🎯 Total Multi-Distance Embeddings: {total_embs}\n"
+                        f"Global and multi-distance vector averages recalculated for maximum recognition accuracy!"
+                    ),
+                    "photos_count": len(saved_image_paths),
+                    "embeddings_count": embeddings_generated,
+                    "total_embeddings": total_embs
+                }
+
+        # ==========================================================
+        # NEW STUDENT REGISTRATION WORKFLOW
+        # ==========================================================
+        # Check if username already taken by another student
         cur.execute("SELECT id FROM students WHERE username = %s", (username,))
         if cur.fetchone():
             cur.close()
             conn.close()
             return {"success": False, "msg": f"❌ Username '{username}' already taken! Please choose another."}
-            
-        cur.execute("SELECT id FROM students WHERE enrollment_no = %s", (enrollment_no,))
-        if cur.fetchone():
-            cur.close()
-            conn.close()
-            return {"success": False, "msg": f"❌ Enrollment No '{enrollment_no}' already exists in student login records."}
-            
+        
         # Ensure student exists in student_detail
         cur.execute("SELECT Enrollment_No FROM student_detail WHERE Enrollment_No = %s", (enrollment_no,))
         if not cur.fetchone():
@@ -1737,9 +1938,7 @@ async def api_teacher_add_student(
         cur.close()
         conn.close()
         
-        # ============================================
         # Create Dataset Folder & Save Student Photos
-        # ============================================
         clean_name = re.sub(r'[^a-zA-Z0-9]', '_', name).strip('_')
         folder_name = f"{enrollment_no}_{clean_name}"
         student_folder = os.path.join(DATASET_DIR, folder_name)
@@ -1748,7 +1947,7 @@ async def api_teacher_add_student(
         saved_image_paths = []
         img_counter = 1
         
-        # 1. Process uploaded files
+        # Process uploaded files
         for photo in photos:
             if photo and photo.filename:
                 content = await photo.read()
@@ -1762,7 +1961,7 @@ async def api_teacher_add_student(
                     saved_image_paths.append(dest_file)
                     img_counter += 1
                     
-        # 2. Process webcam snapshots (base64)
+        # Process webcam snapshots (base64)
         if camera_snapshots:
             try:
                 snapshots_list = json.loads(camera_snapshots)
@@ -1778,7 +1977,7 @@ async def api_teacher_add_student(
             except Exception as snap_err:
                 print(f"[WARN] Failed to process camera snapshots: {snap_err}")
                 
-        # 3. Auto-generate face embeddings using ArcFace
+        # Auto-generate face embeddings using ArcFace
         embeddings_generated = 0
         if saved_image_paths:
             try:
@@ -1795,6 +1994,8 @@ async def api_teacher_add_student(
             "photos_count": len(saved_image_paths),
             "embeddings_count": embeddings_generated
         }
+    except Exception as e:
+        return {"success": False, "msg": f"Database error: {str(e)}"}
     except Exception as e:
         return {"success": False, "msg": f"Database error: {str(e)}"}
 

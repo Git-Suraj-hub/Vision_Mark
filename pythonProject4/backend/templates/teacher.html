@@ -709,7 +709,7 @@
         <span>📷</span> Real-Time Recognition &amp; Camera Stream
       </button>
       <button class="nav-tab-btn" onclick="switchMainTab('enrollment')">
-        <span>📸</span> Student Registration &amp; Face Dataset
+        <span>📸</span> Student Registration &amp; Face Dataset Enrollment / Update
       </button>
       <button class="nav-tab-btn" onclick="switchMainTab('reports')">
         <span>📥</span> Excel Attendance Registers
@@ -927,10 +927,12 @@
             <div class="form-group" style="flex: 1.2; min-width: 150px;">
               <label for="m_date">Attendance Date *</label>
               <input id="m_date" type="date" required>
+              <small style="color: #64748B; font-size: 0.76rem; display: block; margin-top: 2px;">📅 Must match timetable day</small>
             </div>
             <div class="form-group" style="flex: 1.1; min-width: 130px;">
               <label for="m_time">Class In-Time *</label>
               <input id="m_time" type="time" step="1" required>
+              <small style="color: #64748B; font-size: 0.76rem; display: block; margin-top: 2px;">⏰ Scheduled slot only</small>
             </div>
             <div class="form-group" style="flex: 1.1; min-width: 130px;">
               <label for="m_status">Status</label>
@@ -959,9 +961,9 @@
               <input id="m_custom_remark" type="text" placeholder="e.g. Camera obscured; physically verified in classroom">
             </div>
             <div class="form-group" style="flex: 2; min-width: 220px; display: flex; align-items: center; padding-bottom: 8px;">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem; color: #475569;">
-                <input type="checkbox" id="m_override" checked>
-                <span>⚡ <strong>Direct Override</strong> (Mark anytime without timetable block)</span>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem; color: #475569;" title="Timetable schedule strictly validated by default. Check only for extraordinary HOD-approved make-up lectures.">
+                <input type="checkbox" id="m_override">
+                <span>⚡ <strong>Emergency Override</strong> (Special HOD make-up lecture approval only)</span>
               </label>
             </div>
             <div class="form-group" style="flex: 1; min-width: 160px;">
@@ -1025,11 +1027,25 @@
       
       <div class="enrollment-panel">
         <h3 style="font-size: 1.3rem; font-weight: 700; color: #0F172A; margin-bottom: 6px;">
-          📸 Student Registration &amp; Automated Face Dataset Enrollment
+          📸 Student Registration &amp; Face Dataset Enrollment / Update
         </h3>
         <p style="color: #64748B; font-size: 0.95rem; margin-bottom: 20px;">
-          Register a new student, create their account credentials, automatically create their <code>Dataset/MUR..._Name/</code> folder, and run ArcFace AI to extract distance-categorized face embeddings instantly!
+          Register a new student OR update face dataset embeddings for an existing student. Securely verified via student credentials with dual <strong>Overwrite</strong> and <strong>Merge &amp; Enhance</strong> accuracy modes.
         </p>
+
+        <!-- Security Warning Box (Shown if Credentials Fail) -->
+        <div id="regSecurityAlert" style="display: none; margin-bottom: 20px; background: #FEF2F2; border: 2px solid #EF4444; border-radius: 12px; padding: 18px 20px; color: #991B1B;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="font-size: 1.8rem; line-height: 1;">🔒</div>
+            <div>
+              <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 700; color: #B91C1C;">Authentication Failed: Student Credentials Mismatch</h4>
+              <p id="regSecurityMsg" style="margin: 0 0 10px 0; font-size: 0.9rem; line-height: 1.5; color: #7F1D1D; white-space: pre-line;"></p>
+              <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #DC2626; padding: 8px 12px; border-radius: 6px; font-size: 0.84rem;">
+                <strong>⚠️ Security Protocol:</strong> Student credentials grant access to personal biometric models and academic records. Never share these credentials with unauthorized persons as it exposes confidential user data. If credentials have been compromised or observed by others, generate/reset a new password immediately.
+              </div>
+            </div>
+          </div>
+        </div>
 
         <form id="addStudentEnrollForm">
           <div class="form-grid-2" style="margin-bottom: 20px;">
@@ -1108,7 +1124,7 @@
           <!-- Submit Button -->
           <div style="margin-top: 25px;">
             <button type="submit" id="btnSubmitStudent" class="btn btn-primary btn-large" style="width: 100%;">
-              <span>✨ Complete Registration &amp; Generate Face Embeddings</span>
+              <span>✨ Register Student / Update Face Dataset</span>
             </button>
           </div>
         </form>
@@ -1137,6 +1153,68 @@
               <tr><td colspan="7" style="text-align: center;">Loading students...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Modal: Overwrite vs Merge Face Embeddings Choice -->
+      <div id="updateDatasetModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 15px;">
+        <div style="background: #FFFFFF; border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 20px 45px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid #E2E8F0; animation: modalFadeIn 0.25s ease;">
+          <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 20px 24px; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+              <span>🔄</span> Existing Student Dataset Update
+            </h3>
+            <button type="button" onclick="closeUpdateModal()" style="background: transparent; border: none; color: #94A3B8; font-size: 1.3rem; cursor: pointer;">✕</button>
+          </div>
+          <div style="padding: 24px;">
+            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.4rem;">✅</span>
+              <div>
+                <div style="font-weight: 700; color: #166534; font-size: 0.95rem;" id="modalStudentName">Student Verified</div>
+                <div style="font-size: 0.85rem; color: #15803D;">Credentials verified successfully. How would you like to update their face dataset?</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+              <!-- Option 1: Overwrite -->
+              <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #E2E8F0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #FFFFFF;" id="labelOptOverwrite" onclick="selectUpdateOption('overwrite')">
+                <input type="radio" name="modalUpdateOption" id="optOverwrite" value="overwrite" style="margin-top: 4px;">
+                <div>
+                  <div style="font-weight: 700; color: #0F172A; font-size: 0.98rem; margin-bottom: 4px;">
+                    🗑️ Option 1: Replace &amp; Overwrite Old Embeddings
+                  </div>
+                  <div style="font-size: 0.86rem; color: #DC2626; font-weight: 600; margin-bottom: 4px;">
+                    "Purani embeddings hata kar sirf nayi photos lagayein"
+                  </div>
+                  <div style="font-size: 0.82rem; color: #64748B; line-height: 1.4;">
+                    Purani photos aur embeddings ko delete karega aur sirf abhi daali gayi nayi photos se fresh ArcFace embeddings banayega. (Use when student's appearance has changed or old photos were poor quality).
+                  </div>
+                </div>
+              </label>
+
+              <!-- Option 2: Merge (Recommended) -->
+              <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #3B82F6; background: #EFF6FF; border-radius: 12px; cursor: pointer; transition: all 0.2s;" id="labelOptMerge" onclick="selectUpdateOption('merge')">
+                <input type="radio" name="modalUpdateOption" id="optMerge" value="merge" checked style="margin-top: 4px;">
+                <div>
+                  <div style="font-weight: 700; color: #1E40AF; font-size: 0.98rem; margin-bottom: 4px;">
+                    🚀 Option 2: Merge &amp; Enhance Accuracy (Recommended)
+                  </div>
+                  <div style="font-size: 0.86rem; color: #1D4ED8; font-weight: 600; margin-bottom: 4px;">
+                    "Purani photos ke saath nayi photos jodkar accuracy badhayein"
+                  </div>
+                  <div style="font-size: 0.82rem; color: #475569; line-height: 1.4;">
+                    Purani photos ko preserve rakhega aur nayi photos ko add karke sabhi photos se combined ArcFace multi-distance embeddings nikalega. Multi-angle aur lighting conditions me recognition accuracy sabse best rehti hai!
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()" style="padding: 10px 18px;">Cancel</button>
+              <button type="button" id="btnConfirmModalSubmit" class="btn btn-primary" onclick="submitWithChosenMode()" style="padding: 10px 22px; font-weight: 700;">
+                <span>✨ Confirm &amp; Process Update</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2059,11 +2137,71 @@ Department of Computer Science`;
       document.getElementById('snapCountText').textContent = '0/5';
     }
 
+    let pendingEnrollFormData = null;
+
+    function selectUpdateOption(opt) {
+      document.getElementById('optOverwrite').checked = (opt === 'overwrite');
+      document.getElementById('optMerge').checked = (opt === 'merge');
+      const lblOver = document.getElementById('labelOptOverwrite');
+      const lblMerge = document.getElementById('labelOptMerge');
+      if (opt === 'overwrite') {
+        lblOver.style.borderColor = '#EF4444';
+        lblOver.style.background = '#FEF2F2';
+        lblMerge.style.borderColor = '#E2E8F0';
+        lblMerge.style.background = '#FFFFFF';
+      } else {
+        lblMerge.style.borderColor = '#3B82F6';
+        lblMerge.style.background = '#EFF6FF';
+        lblOver.style.borderColor = '#E2E8F0';
+        lblOver.style.background = '#FFFFFF';
+      }
+    }
+
+    function closeUpdateModal() {
+      const modal = document.getElementById('updateDatasetModal');
+      if (modal) modal.style.display = 'none';
+      pendingEnrollFormData = null;
+    }
+
+    async function submitWithChosenMode() {
+      if (!pendingEnrollFormData) return;
+      const checkedInput = document.querySelector('input[name="modalUpdateOption"]:checked');
+      const selectedMode = checkedInput ? checkedInput.value : 'merge';
+      pendingEnrollFormData.set('update_mode', selectedMode);
+
+      const btn = document.getElementById('btnConfirmModalSubmit');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Processing AI Embeddings...</span>';
+
+      try {
+        const res = await (await fetch('/api/teacher/add_student', { method: 'POST', body: pendingEnrollFormData })).json();
+        closeUpdateModal();
+        if (res.success) {
+          showToast(res.msg, 'success');
+          document.getElementById('addStudentEnrollForm').reset();
+          resetSnapshots();
+          document.getElementById('regSecurityAlert').style.display = 'none';
+          loadStudentsList();
+          loadAnalyticsData();
+        } else {
+          showToast(res.msg, 'error');
+        }
+      } catch (err) {
+        showToast('Update failed: ' + err, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ Confirm &amp; Process Update</span>';
+        const submitBtn = document.getElementById('btnSubmitStudent');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>✨ Register Student / Update Face Dataset</span>';
+      }
+    }
+
     document.getElementById('addStudentEnrollForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('btnSubmitStudent');
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span>⏳ Creating Dataset &amp; Generating ArcFace Embeddings...</span>';
+      submitBtn.innerHTML = '<span>⏳ Validating Credentials &amp; Extracting ArcFace Embeddings...</span>';
 
       const fd = new FormData();
       fd.append('enrollment_no', document.getElementById('reg_enroll').value.trim());
@@ -2072,6 +2210,7 @@ Department of Computer Science`;
       fd.append('username', document.getElementById('reg_user').value.trim());
       fd.append('password', document.getElementById('reg_pass').value.trim());
       fd.append('parent_phone', document.getElementById('reg_parent_phone').value.trim());
+      fd.append('update_mode', 'new');
 
       // Files
       const files = document.getElementById('filePhotos').files;
@@ -2086,7 +2225,27 @@ Department of Computer Science`;
 
       try {
         const res = await (await fetch('/api/teacher/add_student', { method: 'POST', body: fd })).json();
+        
+        if (res.requires_choice) {
+          pendingEnrollFormData = fd;
+          document.getElementById('modalStudentName').textContent = `${res.student_name} (${res.enrollment_no})`;
+          selectUpdateOption('merge');
+          document.getElementById('updateDatasetModal').style.display = 'flex';
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>✨ Register Student / Update Face Dataset</span>';
+          return;
+        }
+
+        if (res.is_auth_error) {
+          document.getElementById('regSecurityMsg').textContent = res.msg;
+          document.getElementById('regSecurityAlert').style.display = 'block';
+          document.getElementById('regSecurityAlert').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('Security Alert: Student credentials authentication failed!', 'error');
+          return;
+        }
+
         if (res.success) {
+          document.getElementById('regSecurityAlert').style.display = 'none';
           showToast(res.msg, 'success');
           document.getElementById('addStudentEnrollForm').reset();
           resetSnapshots();
@@ -2096,10 +2255,10 @@ Department of Computer Science`;
           showToast(res.msg, 'error');
         }
       } catch (err) {
-        showToast('Registration failed: ' + err, 'error');
+        showToast('Registration/Update failed: ' + err, 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>✨ Complete Registration &amp; Generate Face Embeddings</span>';
+        submitBtn.innerHTML = '<span>✨ Register Student / Update Face Dataset</span>';
       }
     });
 
