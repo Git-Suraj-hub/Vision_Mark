@@ -20,6 +20,11 @@
       --card-border: #E2E8F0;
     }
 
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
     body {
       background: #F1F5F9;
       color: #1E293B;
@@ -1156,67 +1161,7 @@
         </div>
       </div>
 
-      <!-- Modal: Overwrite vs Merge Face Embeddings Choice -->
-      <div id="updateDatasetModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 15px;">
-        <div style="background: #FFFFFF; border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 20px 45px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid #E2E8F0; animation: modalFadeIn 0.25s ease;">
-          <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 20px 24px; color: white; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-              <span>🔄</span> Existing Student Dataset Update
-            </h3>
-            <button type="button" onclick="closeUpdateModal()" style="background: transparent; border: none; color: #94A3B8; font-size: 1.3rem; cursor: pointer;">✕</button>
-          </div>
-          <div style="padding: 24px;">
-            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 1.4rem;">✅</span>
-              <div>
-                <div style="font-weight: 700; color: #166534; font-size: 0.95rem;" id="modalStudentName">Student Verified</div>
-                <div style="font-size: 0.85rem; color: #15803D;">Credentials verified successfully. How would you like to update their face dataset?</div>
-              </div>
-            </div>
 
-            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
-              <!-- Option 1: Overwrite -->
-              <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #E2E8F0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #FFFFFF;" id="labelOptOverwrite" onclick="selectUpdateOption('overwrite')">
-                <input type="radio" name="modalUpdateOption" id="optOverwrite" value="overwrite" style="margin-top: 4px;">
-                <div>
-                  <div style="font-weight: 700; color: #0F172A; font-size: 0.98rem; margin-bottom: 4px;">
-                    🗑️ Option 1: Replace &amp; Overwrite Old Embeddings
-                  </div>
-                  <div style="font-size: 0.86rem; color: #DC2626; font-weight: 600; margin-bottom: 4px;">
-                    Delete old embeddings and generate fresh biometric profiles from new photos only
-                  </div>
-                  <div style="font-size: 0.82rem; color: #64748B; line-height: 1.4;">
-                    Deletes previous dataset photos and database embeddings. Generates brand new 512-d ArcFace vectors exclusively from the newly provided photos. (Recommended if the student's appearance has changed or previous photos were poor quality).
-                  </div>
-                </div>
-              </label>
-
-              <!-- Option 2: Merge (Recommended) -->
-              <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #3B82F6; background: #EFF6FF; border-radius: 12px; cursor: pointer; transition: all 0.2s;" id="labelOptMerge" onclick="selectUpdateOption('merge')">
-                <input type="radio" name="modalUpdateOption" id="optMerge" value="merge" checked style="margin-top: 4px;">
-                <div>
-                  <div style="font-weight: 700; color: #1E40AF; font-size: 0.98rem; margin-bottom: 4px;">
-                    🚀 Option 2: Merge &amp; Enhance Accuracy (Recommended)
-                  </div>
-                  <div style="font-size: 0.86rem; color: #1D4ED8; font-weight: 600; margin-bottom: 4px;">
-                    Preserve existing photos and combine with new photos for maximum accuracy
-                  </div>
-                  <div style="font-size: 0.82rem; color: #475569; line-height: 1.4;">
-                    Retains all existing dataset photos and appends newly captured photos. Recalculates category-wise and global vector averages across all combined photos to maximize recognition accuracy across different lighting conditions and distances.
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-              <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()" style="padding: 10px 18px;">Cancel</button>
-              <button type="button" id="btnConfirmModalSubmit" class="btn btn-primary" onclick="submitWithChosenMode()" style="padding: 10px 22px; font-weight: 700;">
-                <span>✨ Confirm &amp; Process Update</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -1419,14 +1364,21 @@
     let capturedSnapshots = [];
 
     // Tab Navigation
-    function switchMainTab(tabId) {
+    function switchMainTab(tabId, clickedBtn = null) {
       document.querySelectorAll('.main-tab-content').forEach(el => el.style.display = 'none');
       document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
 
       const target = document.getElementById(`tab-${tabId}`);
       if (target) target.style.display = 'block';
 
-      event.currentTarget.classList.add('active');
+      if (clickedBtn) {
+        clickedBtn.classList.add('active');
+      } else if (window.event && window.event.currentTarget && window.event.currentTarget.classList) {
+        window.event.currentTarget.classList.add('active');
+      } else {
+        const tabBtn = document.querySelector(`.nav-tab-btn[onclick*="${tabId}"]`);
+        if (tabBtn) tabBtn.classList.add('active');
+      }
 
       if (tabId === 'analytics') {
         loadAnalyticsData();
@@ -2140,20 +2092,18 @@ Department of Computer Science`;
     let pendingEnrollFormData = null;
 
     function selectUpdateOption(opt) {
-      document.getElementById('optOverwrite').checked = (opt === 'overwrite');
-      document.getElementById('optMerge').checked = (opt === 'merge');
+      const optOver = document.getElementById('optOverwrite');
+      const optMer = document.getElementById('optMerge');
+      if (optOver) optOver.checked = (opt === 'overwrite');
+      if (optMer) optMer.checked = (opt === 'merge');
       const lblOver = document.getElementById('labelOptOverwrite');
       const lblMerge = document.getElementById('labelOptMerge');
       if (opt === 'overwrite') {
-        lblOver.style.borderColor = '#EF4444';
-        lblOver.style.background = '#FEF2F2';
-        lblMerge.style.borderColor = '#E2E8F0';
-        lblMerge.style.background = '#FFFFFF';
+        if (lblOver) { lblOver.style.borderColor = '#EF4444'; lblOver.style.background = '#FEF2F2'; }
+        if (lblMerge) { lblMerge.style.borderColor = '#E2E8F0'; lblMerge.style.background = '#FFFFFF'; }
       } else {
-        lblMerge.style.borderColor = '#3B82F6';
-        lblMerge.style.background = '#EFF6FF';
-        lblOver.style.borderColor = '#E2E8F0';
-        lblOver.style.background = '#FFFFFF';
+        if (lblMerge) { lblMerge.style.borderColor = '#3B82F6'; lblMerge.style.background = '#EFF6FF'; }
+        if (lblOver) { lblOver.style.borderColor = '#E2E8F0'; lblOver.style.background = '#FFFFFF'; }
       }
     }
 
@@ -2164,17 +2114,23 @@ Department of Computer Science`;
     }
 
     async function submitWithChosenMode() {
-      if (!pendingEnrollFormData) return;
+      if (!pendingEnrollFormData) {
+        showToast('No pending form submission found.', 'error');
+        return;
+      }
       const checkedInput = document.querySelector('input[name="modalUpdateOption"]:checked');
       const selectedMode = checkedInput ? checkedInput.value : 'merge';
       pendingEnrollFormData.set('update_mode', selectedMode);
 
       const btn = document.getElementById('btnConfirmModalSubmit');
-      btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Processing AI Embeddings...</span>';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳ Processing AI Embeddings...</span>';
+      }
 
       try {
-        const res = await (await fetch('/api/teacher/add_student', { method: 'POST', body: pendingEnrollFormData })).json();
+        const response = await fetch('/api/teacher/add_student', { method: 'POST', body: pendingEnrollFormData });
+        const res = await response.json();
         closeUpdateModal();
         if (res.success) {
           showToast(res.msg, 'success');
@@ -2189,11 +2145,15 @@ Department of Computer Science`;
       } catch (err) {
         showToast('Update failed: ' + err, 'error');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>✨ Confirm &amp; Process Update</span>';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>✨ Confirm &amp; Process Update</span>';
+        }
         const submitBtn = document.getElementById('btnSubmitStudent');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>✨ Register Student / Update Face Dataset</span>';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>✨ Register Student / Update Face Dataset</span>';
+        }
       }
     }
 
@@ -2310,6 +2270,7 @@ Department of Computer Science`;
     }
 
     function editStudentDetails(s) {
+      switchMainTab('enrollment');
       document.getElementById('reg_enroll').value = s.enrollment_no;
       document.getElementById('reg_name').value = s.name;
       document.getElementById('reg_class').value = s.class || 'B.Tech CSE - 7th Sem';
@@ -2376,5 +2337,66 @@ Department of Computer Science`;
     // Initialize
     loadUserData();
   </script>
+  <!-- Modal: Overwrite vs Merge Face Embeddings Choice (Global Root Level) -->
+  <div id="updateDatasetModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); z-index: 100000; align-items: center; justify-content: center; padding: 15px;">
+    <div style="background: #FFFFFF; border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #CBD5E1; animation: modalFadeIn 0.25s ease;">
+      <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 20px 24px; color: white; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+          <span>🔄</span> Existing Student Dataset Update
+        </h3>
+        <button type="button" onclick="closeUpdateModal()" style="background: transparent; border: none; color: #94A3B8; font-size: 1.3rem; cursor: pointer; line-height: 1;">✕</button>
+      </div>
+      <div style="padding: 24px;">
+        <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.4rem;">✅</span>
+          <div>
+            <div style="font-weight: 700; color: #166534; font-size: 0.95rem;" id="modalStudentName">Student Verified</div>
+            <div style="font-size: 0.85rem; color: #15803D;">Credentials verified successfully. How would you like to update their face dataset?</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+          <!-- Option 1: Overwrite -->
+          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #E2E8F0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #FFFFFF;" id="labelOptOverwrite" onclick="selectUpdateOption('overwrite')">
+            <input type="radio" name="modalUpdateOption" id="optOverwrite" value="overwrite" style="margin-top: 4px;">
+            <div>
+              <div style="font-weight: 700; color: #0F172A; font-size: 0.98rem; margin-bottom: 4px;">
+                🗑️ Option 1: Replace &amp; Overwrite Old Embeddings
+              </div>
+              <div style="font-size: 0.86rem; color: #DC2626; font-weight: 600; margin-bottom: 4px;">
+                Delete old embeddings and generate fresh biometric profiles from new photos only
+              </div>
+              <div style="font-size: 0.82rem; color: #64748B; line-height: 1.4;">
+                Deletes previous dataset photos and database embeddings. Generates brand new 512-d ArcFace vectors exclusively from the newly provided photos. (Recommended if the student's appearance has changed or previous photos were poor quality).
+              </div>
+            </div>
+          </label>
+
+          <!-- Option 2: Merge (Recommended) -->
+          <label style="display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 2px solid #3B82F6; background: #EFF6FF; border-radius: 12px; cursor: pointer; transition: all 0.2s;" id="labelOptMerge" onclick="selectUpdateOption('merge')">
+            <input type="radio" name="modalUpdateOption" id="optMerge" value="merge" checked style="margin-top: 4px;">
+            <div>
+              <div style="font-weight: 700; color: #1E40AF; font-size: 0.98rem; margin-bottom: 4px;">
+                🚀 Option 2: Merge &amp; Enhance Accuracy (Recommended)
+              </div>
+              <div style="font-size: 0.86rem; color: #1D4ED8; font-weight: 600; margin-bottom: 4px;">
+                Preserve existing photos and combine with new photos for maximum accuracy
+              </div>
+              <div style="font-size: 0.82rem; color: #475569; line-height: 1.4;">
+                Retains all existing dataset photos and appends newly captured photos. Recalculates category-wise and global vector averages across all combined photos to maximize recognition accuracy across different lighting conditions and distances.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()" style="padding: 10px 18px;">Cancel</button>
+          <button type="button" id="btnConfirmModalSubmit" class="btn btn-primary" onclick="submitWithChosenMode()" style="padding: 10px 22px; font-weight: 700;">
+            <span>✨ Confirm &amp; Process Update</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -149,7 +149,7 @@ def recognition_callback(match, similarity, bbox, img_bytes):
         
         # Check active camera teacher who is running the webcam
         teacher_sub = active_camera_teacher.get("subject") if active_camera_teacher else None
-        teacher_name = active_camera_teacher.get("name") or (active_camera_teacher.get("username") if active_camera_teacher else "Faculty")
+        teacher_name = (active_camera_teacher.get("name") or active_camera_teacher.get("username")) if active_camera_teacher else "Faculty"
         teacher_table = SUBJECT_TABLE_MAP.get(teacher_sub) if teacher_sub else None
         
         is_live_attendance = False
@@ -257,9 +257,21 @@ def register_student_face_dataset(enrollment_no: str, student_name: str, saved_i
     if recog and hasattr(recog, 'arcface_app') and recog.arcface_app is not None:
         arcface = recog.arcface_app
     else:
-        from insightface.app import FaceAnalysis
-        arcface = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
-        arcface.prepare(ctx_id=0, det_size=(640, 640))
+        try:
+            from insightface.app import FaceAnalysis
+            arcface = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
+            arcface.prepare(ctx_id=0, det_size=(640, 640))
+        except Exception as e:
+            print(f"[ERROR] Could not initialize ArcFace model: {e}")
+            arcface = None
+            
+    if arcface is None:
+        print("[ERROR] Face recognition model is not available for dataset extraction!")
+        return {
+            "total_faces": 0,
+            "category_counts": {},
+            "error": "ArcFace model not found or failed to initialize"
+        }
         
     DISTANCE_THRESHOLDS = {
         'very_close': 150,
@@ -414,6 +426,56 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "app": "Vision_Mark"}
+
+@app.get("/v1/models")
+@app.get("/models")
+def list_models():
+    """Returns available vision and face recognition models to prevent 404 polling errors."""
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "buffalo_l",
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "insightface",
+                "permission": [],
+                "root": "buffalo_l",
+                "parent": None
+            },
+            {
+                "id": "arcface",
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "vision_mark",
+                "permission": [],
+                "root": "arcface",
+                "parent": None
+            },
+            {
+                "id": "retinaface",
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "vision_mark",
+                "permission": [],
+                "root": "retinaface",
+                "parent": None
+            }
+        ]
+    }
+
+@app.get("/v1/models/{model_id}")
+@app.get("/models/{model_id}")
+def get_model(model_id: str):
+    return {
+        "id": model_id,
+        "object": "model",
+        "created": 1700000000,
+        "owned_by": "vision_mark",
+        "permission": [],
+        "root": model_id,
+        "parent": None
+    }
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -1861,8 +1923,11 @@ async def api_teacher_add_student(
                 # Generate fresh ArcFace embeddings
                 embeddings_generated = 0
                 if saved_image_paths:
-                    res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
-                    embeddings_generated = res.get("total_faces", 0)
+                    try:
+                        res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
+                        embeddings_generated = res.get("total_faces", 0)
+                    except Exception as emb_err:
+                        print(f"[ERROR] Face embedding extraction failed (overwrite): {emb_err}")
                 
                 cur.close()
                 conn.close()
@@ -1918,8 +1983,11 @@ async def api_teacher_add_student(
                 
                 embeddings_generated = 0
                 if saved_image_paths:
-                    res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
-                    embeddings_generated = res.get("total_faces", 0)
+                    try:
+                        res = register_student_face_dataset(enrollment_no, name, saved_image_paths)
+                        embeddings_generated = res.get("total_faces", 0)
+                    except Exception as emb_err:
+                        print(f"[ERROR] Face embedding extraction failed (merge): {emb_err}")
                 
                 cur.execute("SELECT COUNT(*) as total_embs FROM student_embeddings WHERE Enrollment_No = %s", (enrollment_no,))
                 tot_row = cur.fetchone()
@@ -2028,8 +2096,6 @@ async def api_teacher_add_student(
             "photos_count": len(saved_image_paths),
             "embeddings_count": embeddings_generated
         }
-    except Exception as e:
-        return {"success": False, "msg": f"Database error: {str(e)}"}
     except Exception as e:
         return {"success": False, "msg": f"Database error: {str(e)}"}
 
