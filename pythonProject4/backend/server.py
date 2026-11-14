@@ -572,7 +572,7 @@ def api_teacher_class_status(session: Optional[str] = Cookie(None)):
                 "mode": "LIVE_ATTENDANCE",
                 "badge": f"● LIVE ATTENDANCE ACTIVE — {teacher_subject}",
                 "title": f"🟢 Active Lecture: {running_subject} ({start_t} - {end_t}, Room {room})",
-                "message": f"Aapka assigned subject '{teacher_subject}' actively schedule me chal raha hai. Camera biometric face recognition dwara attendance automatically mark kar raha hai!",
+                "message": f"Your assigned course '{teacher_subject}' is currently active according to the timetable. The AI webcam is actively recognizing faces and automatically recording verified attendance in the university database.",
                 "current_class": {
                     "subject": running_subject,
                     "teacher": running_teacher,
@@ -590,7 +590,7 @@ def api_teacher_class_status(session: Optional[str] = Cookie(None)):
                 "mode": "TESTING_PREVIEW_MODE",
                 "badge": f"⚠️ PREVIEW ONLY (NOT YOUR LECTURE: {teacher_subject})",
                 "title": f"⚠️ Scheduled Subject Mismatch: Active lecture is '{running_subject}'",
-                "message": f"Aapka assigned subject '{teacher_subject}' hai, lekin abhi timetable me '{running_subject}' (Faculty: {running_teacher}, Room {room}, {start_t} - {end_t}) chal raha hai. Aapka webcam Testing/Preview Mode me chalega — is samay '{teacher_subject}' ki attendance auto-mark nahi hogi. Kisi student ki attendance lagane ke liye neeche 'Manual Faculty Attendance' use karein.",
+                "message": f"Your assigned course is '{teacher_subject}', but the university timetable currently schedules '{running_subject}' (Faculty: {running_teacher}, Room {room}, {start_t} - {end_t}). The webcam is operating in Testing / Preview Mode only — automated attendance will NOT be recorded for '{teacher_subject}'. To record attendance for an extraordinary or rescheduled lecture, please use 'Manual Faculty Attendance' below.",
                 "current_class": {
                     "subject": running_subject,
                     "teacher": running_teacher,
@@ -608,7 +608,7 @@ def api_teacher_class_status(session: Optional[str] = Cookie(None)):
             "mode": "TESTING_PREVIEW_MODE",
             "badge": f"⚠️ FREE PERIOD / PREVIEW — {teacher_subject}",
             "title": f"⚠️ Free Period / No Active Class — Assigned Subject: '{teacher_subject}'",
-            "message": f"Abhi ({current_day}, {exact_time_display}) timetable me koi university lecture scheduled nahi hai. Aapka assigned subject '{teacher_subject}' hai. Camera sirf Testing / Preview Mode me chalega (attendance database me save nahi hogi). Unscheduled lecture ki attendance ke liye neeche 'Manual Faculty Attendance' use karein.",
+            "message": f"No university lecture is scheduled at this time ({current_day}, {exact_time_display}). Your assigned subject is '{teacher_subject}'. The camera operates in Testing / Preview Mode only (biometric detections will not be saved to the database). To record an unscheduled session, please use 'Manual Faculty Attendance' below.",
             "current_class": None,
             "teacher_subject": teacher_subject
         }
@@ -840,9 +840,9 @@ def api_mark_attendance(
                 conn.close()
                 return {
                     "success": False, 
-                    "msg": f"❌ Class Not Scheduled: Is samay aapki class nahi hai!\n\n"
-                           f"According to the official timetable, no lecture is scheduled on {current_day} at {exact_time_display} (Free Period / Off-Hours).\n\n"
-                           f"Please check the university timetable and select your scheduled lecture slot."
+                    "msg": f"❌ Class Not Scheduled: Lecture slot not found in timetable!\n\n"
+                           f"According to the official university timetable, no lecture is scheduled on {current_day} at {exact_time_display} (Free Period / Off-Hours).\n\n"
+                           f"Please check the academic timetable and select your scheduled lecture slot."
                 }
             
             current_subject = current_class['Subject']
@@ -858,11 +858,11 @@ def api_mark_attendance(
                 conn.close()
                 return {
                     "success": False,
-                    "msg": f"❌ Timetable Conflict: Is samay aapki class nahi hai!\n\n"
+                    "msg": f"❌ Timetable Conflict: Scheduled lecture belongs to another course!\n\n"
                            f"Selected Slot: {current_day} at {exact_time_display}\n"
-                           f"Scheduled Class: {current_subject} (Teacher: {current_class['Teacher']}, Room: {current_class['Room']})\n"
+                           f"Scheduled Class: {current_subject} (Faculty: {current_class['Teacher']}, Room: {current_class['Room']})\n"
                            f"Your Subject: {teacher_subject}\n\n"
-                           f"Attendance for '{teacher_subject}' cannot be marked right now. Please check the timetable and mark during your subject's scheduled slot.",
+                           f"Attendance for '{teacher_subject}' cannot be marked right now. Please verify the timetable and mark during your subject's designated lecture slot.",
                     "current_subject": current_subject,
                     "teacher_subject": teacher_subject
                 }
@@ -1752,6 +1752,35 @@ async def api_teacher_add_student(
                     )
                 }
             
+            # If no new photos or camera snapshots are provided, update student details directly!
+            has_new_photos = any(p and getattr(p, 'filename', None) for p in photos) or bool(camera_snapshots and len(camera_snapshots) > 10)
+            if not has_new_photos:
+                cur.execute("""
+                    UPDATE students 
+                    SET name = %s, class = %s, parent_phone = %s 
+                    WHERE enrollment_no = %s
+                """, (name, class_name, parent_phone, enrollment_no))
+                
+                cur.execute("""
+                    UPDATE student_detail 
+                    SET Name = %s, parent_phone = %s 
+                    WHERE Enrollment_No = %s
+                """, (name, parent_phone, enrollment_no))
+                conn.commit()
+                cur.close()
+                conn.close()
+                return {
+                    "success": True,
+                    "mode": "details_updated",
+                    "msg": (
+                        f"✅ Student Details Updated Successfully!\n\n"
+                        f"Student: {name} ({enrollment_no})\n"
+                        f"Parent Contact: {parent_phone or 'Not Provided'}\n"
+                        f"Class: {class_name}\n"
+                        f"Student account and parent communication records updated in database."
+                    )
+                }
+
             # Credentials are valid. Did teacher specify update_mode ('overwrite' or 'merge')?
             if update_mode not in ('overwrite', 'merge'):
                 cur.close()
@@ -1844,8 +1873,8 @@ async def api_teacher_add_student(
                     "msg": (
                         f"🔄 Face Dataset Successfully Replaced & Updated!\n\n"
                         f"Student: {name} ({enrollment_no})\n"
-                        f"Status: Purani embeddings hata kar nayi photos lagayi gayi hain.\n"
-                        f"📸 Nayi Photos Stored: {len(saved_image_paths)}\n"
+                        f"Status: Previous embeddings removed and replaced with new photos.\n"
+                        f"📸 New Photos Stored: {len(saved_image_paths)}\n"
                         f"⚡ Fresh Face Embeddings: {embeddings_generated}\n"
                         f"Live recognition model refreshed instantly!"
                     ),
@@ -1905,9 +1934,9 @@ async def api_teacher_add_student(
                     "msg": (
                         f"✨ Face Dataset Successfully Merged & Accuracy Enhanced!\n\n"
                         f"Student: {name} ({enrollment_no})\n"
-                        f"Status: Purani photos ke saath nayi photos jodi gayi hain.\n"
-                        f"📸 Nayi Photos Added: {len(saved_image_paths)}\n"
-                        f"⚡ Naye Extracted Embeddings: {embeddings_generated}\n"
+                        f"Status: Existing photos preserved and combined with new photos.\n"
+                        f"📸 New Photos Added: {len(saved_image_paths)}\n"
+                        f"⚡ Newly Extracted Embeddings: {embeddings_generated}\n"
                         f"🎯 Total Multi-Distance Embeddings: {total_embs}\n"
                         f"Global and multi-distance vector averages recalculated for maximum recognition accuracy!"
                     ),

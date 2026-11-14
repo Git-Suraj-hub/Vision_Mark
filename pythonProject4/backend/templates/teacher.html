@@ -1072,7 +1072,7 @@
             </div>
             <div class="form-group">
               <label for="reg_parent_phone">Parent WhatsApp / Mobile No *</label>
-              <input id="reg_parent_phone" type="tel" placeholder="e.g. 7737147832" required>
+              <input id="reg_parent_phone" type="tel" placeholder="e.g. 9876543210" required>
             </div>
           </div>
 
@@ -1183,10 +1183,10 @@
                     🗑️ Option 1: Replace &amp; Overwrite Old Embeddings
                   </div>
                   <div style="font-size: 0.86rem; color: #DC2626; font-weight: 600; margin-bottom: 4px;">
-                    "Purani embeddings hata kar sirf nayi photos lagayein"
+                    Delete old embeddings and generate fresh biometric profiles from new photos only
                   </div>
                   <div style="font-size: 0.82rem; color: #64748B; line-height: 1.4;">
-                    Purani photos aur embeddings ko delete karega aur sirf abhi daali gayi nayi photos se fresh ArcFace embeddings banayega. (Use when student's appearance has changed or old photos were poor quality).
+                    Deletes previous dataset photos and database embeddings. Generates brand new 512-d ArcFace vectors exclusively from the newly provided photos. (Recommended if the student's appearance has changed or previous photos were poor quality).
                   </div>
                 </div>
               </label>
@@ -1199,10 +1199,10 @@
                     🚀 Option 2: Merge &amp; Enhance Accuracy (Recommended)
                   </div>
                   <div style="font-size: 0.86rem; color: #1D4ED8; font-weight: 600; margin-bottom: 4px;">
-                    "Purani photos ke saath nayi photos jodkar accuracy badhayein"
+                    Preserve existing photos and combine with new photos for maximum accuracy
                   </div>
                   <div style="font-size: 0.82rem; color: #475569; line-height: 1.4;">
-                    Purani photos ko preserve rakhega aur nayi photos ko add karke sabhi photos se combined ArcFace multi-distance embeddings nikalega. Multi-angle aur lighting conditions me recognition accuracy sabse best rehti hai!
+                    Retains all existing dataset photos and appends newly captured photos. Recalculates category-wise and global vector averages across all combined photos to maximize recognition accuracy across different lighting conditions and distances.
                   </div>
                 </div>
               </label>
@@ -2262,6 +2262,8 @@ Department of Computer Science`;
       }
     });
 
+    let cachedAllStudentsList = [];
+
     async function loadStudentsList() {
       try {
         const res = await (await fetch('/api/teacher/students_list')).json();
@@ -2271,6 +2273,7 @@ Department of Computer Science`;
         if (singleSelect) {
           singleSelect.innerHTML = '<option value="">-- Select Student to Audit --</option>';
         }
+        cachedAllStudentsList = res.students || [];
         if (!res.students || res.students.length === 0) {
           tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No registered students</td></tr>';
           return;
@@ -2295,13 +2298,44 @@ Department of Computer Science`;
               <button onclick="togglePassword(${s.id}, '${s.password}')" class="btn btn-small btn-secondary" style="padding: 2px 6px; margin-left: 5px;">👁️</button>
             </td>
             <td>
-              <button onclick="resetPasswordPrompt(${s.id}, '${s.name}')" class="btn btn-small btn-primary" style="padding: 4px 8px;">🔑 Reset</button>
+              <div style="display: inline-flex; gap: 6px;">
+                <button type="button" onclick='editStudentDetails(${JSON.stringify(s)})' class="btn btn-small btn-secondary" style="padding: 4px 8px;" title="Edit Student Profile &amp; Parent Contact">✏️ Edit</button>
+                <button type="button" onclick="resetPasswordPrompt(${s.id}, '${s.name}')" class="btn btn-small btn-primary" style="padding: 4px 8px;" title="Reset Student Password">🔑 Reset</button>
+              </div>
             </td>
           `;
           tbody.appendChild(tr);
         });
       } catch (e) {}
     }
+
+    function editStudentDetails(s) {
+      document.getElementById('reg_enroll').value = s.enrollment_no;
+      document.getElementById('reg_name').value = s.name;
+      document.getElementById('reg_class').value = s.class || 'B.Tech CSE - 7th Sem';
+      document.getElementById('reg_user').value = s.username;
+      document.getElementById('reg_pass').value = s.password || '';
+      document.getElementById('reg_parent_phone').value = s.parent_phone || '';
+      
+      const formPanel = document.getElementById('addStudentEnrollForm');
+      formPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('reg_parent_phone').focus();
+      showToast(`Prefilled details for ${s.name} (${s.enrollment_no}). You can edit the parent contact or details and click Submit to update!`, 'info');
+    }
+
+    // Auto-lookup existing student details on enrollment input blur
+    document.getElementById('reg_enroll').addEventListener('change', (e) => {
+      const val = e.target.value.trim().toUpperCase();
+      if (!val || cachedAllStudentsList.length === 0) return;
+      const found = cachedAllStudentsList.find(s => s.enrollment_no.toUpperCase() === val);
+      if (found) {
+        document.getElementById('reg_name').value = found.name;
+        document.getElementById('reg_class').value = found.class || 'B.Tech CSE - 7th Sem';
+        document.getElementById('reg_user').value = found.username;
+        document.getElementById('reg_pass').value = found.password || '';
+        document.getElementById('reg_parent_phone').value = found.parent_phone || '';
+      }
+    });
 
     function downloadSingleStudentReport() {
       const select = document.getElementById('singleStudentSelect');
