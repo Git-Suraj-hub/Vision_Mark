@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: vision-mark
+    runtime: python
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: HOST
+        value: 0.0.0.0
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 4000
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: face_detection
+      - key: DB_SSL_DISABLED
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_EXPIRE_SECONDS
+        value: 21600
