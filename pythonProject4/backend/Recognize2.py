@@ -1,15 +1,10 @@
-import gc
 import os
 import cv2
 import numpy as np
 import mysql.connector
 from insightface.app import FaceAnalysis
-try:
-    from retinaface import RetinaFace
-    HAS_RETINA_FACE = True
-except Exception:
-    RetinaFace = None
-    HAS_RETINA_FACE = False
+from retinaface import RetinaFace
+import torch
 import time
 from scipy.spatial.distance import cosine
 from datetime import datetime
@@ -43,18 +38,12 @@ class AdvancedFaceRecognition:
         self.running = False
         self.on_recognize = self.mark_attendance
 
-        # Initialize ArcFace (Exact same buffalo_l ResNet-50 ArcFace accuracy)
-        # allowed_modules restricts loading to detection + recognition only,
-        # skipping unused age/gender and 3D mesh models to stay comfortably within 512MB RAM.
-        print("[INFO] Loading ArcFace model (buffalo_l ResNet-50)...")
-        model_name = os.getenv("INSIGHTFACE_MODEL", "buffalo_l")
-        self.arcface_app = FaceAnalysis(name=model_name, providers=['CPUExecutionProvider'], allowed_modules=['detection', 'recognition'])
+        # Initialize ArcFace
+        print("[INFO] Loading ArcFace model...")
+        self.arcface_app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
         self.arcface_app.prepare(ctx_id=0, det_size=(640, 640))
 
-        if HAS_RETINA_FACE:
-            print("[INFO] RetinaFace will be loaded when needed...")
-        else:
-            print("[INFO] Using InsightFace det_10g (native RetinaFace ONNX) for all distances.")
+        print("[INFO] RetinaFace will be loaded when needed...")
 
         # Load embeddings with multi-distance support
         self.load_known_faces_multi_distance()
@@ -76,9 +65,6 @@ class AdvancedFaceRecognition:
         self.last_processed_frame = None
         self.last_faces = []
         self.frame_skip_count = 0
-
-        # Run garbage collection after startup loading to minimize RAM footprint
-        gc.collect()
 
         print("[INFO] System initialized successfully!")
 
@@ -335,9 +321,7 @@ class AdvancedFaceRecognition:
         return enhanced
 
     def detect_faces_very_close(self, img):
-        """Very close detection using RetinaFace (with ArcFace fallback)"""
-        if not HAS_RETINA_FACE or RetinaFace is None:
-            return self.detect_faces_arcface(img, "ArcFace (Very Close)")
+        """Very close detection using RetinaFace"""
         try:
             faces = RetinaFace.detect_faces(img, threshold=0.5)
             detected_faces = []

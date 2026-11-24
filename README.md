@@ -12,11 +12,7 @@
 
 > A modern, production-ready computer vision attendance platform featuring **multi-distance face recognition**, **in-browser camera streaming**, **hierarchical cascade matching**, and **automated academic ERP ledger enforcement**.
 
-[Explore Features](#-core-features) · [System Architecture](#-biometric-engine-architecture) · [Quickstart](#-quickstart-guide) · [1-Click Cloud Deployment](#-1-click-cloud-deployment) · [Security & Privacy](#-enterprise-security--privacy)
-
-<br/>
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Git-Suraj-hub/Vision_Mark)
+[Explore Features](#-core-features) · [System Architecture](#-biometric-engine-architecture) · [Quickstart](#-quickstart-guide) · [Security & Privacy](#-enterprise-security--privacy)
 
 </div>
 
@@ -27,10 +23,6 @@
 - [Core Features](#-core-features)
 - [Biometric Engine Architecture](#-biometric-engine-architecture)
 - [System Architecture](#-system-architecture)
-- [1-Click Cloud Deployment](#-1-click-cloud-deployment)
-  - [Render Deployment](#option-1-render-1-click)
-  - [Hugging Face Spaces (Free 16 GB RAM)](#option-2-hugging-face-spaces-100-free)
-  - [Docker Container](#option-3-docker-container)
 - [Quickstart Guide](#-quickstart-guide)
   - [Prerequisites](#1-prerequisites)
   - [Local Installation](#2-local-installation)
@@ -146,62 +138,6 @@ Vision Mark operates on an authentic 5-stage computer vision and deep learning p
 │  └────────────────────────┘  └────────────────────────┘  └────────────────────────┘         │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## 🚀 1-Click Cloud Deployment
-
-Vision Mark is configured with a root `main.py` entrypoint, `requirements.txt`, `Dockerfile`, and `render.yaml` for zero-configuration cloud deployment.
-
-### Option 1: Render (1-Click)
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Git-Suraj-hub/Vision_Mark)
-
-1. Click the **Deploy to Render** button above or connect your GitHub repository in the [Render Dashboard](https://dashboard.render.com/).
-2. Render will automatically detect `render.yaml` and configure the web service.
-3. Add your **TiDB Cloud** credentials under Environment Variables:
-   * `DB_HOST`: `gateway01.ap-northeast-1.prod.aws.tidbcloud.com`
-   * `DB_PORT`: `4000`
-   * `DB_NAME`: `face_detection`
-   * `DB_USER`: `<your_tidb_username>`
-   * `DB_PASSWORD`: `<your_tidb_password>`
-   * `DB_SSL_DISABLED`: `False`
-4. Click **Create Web Service**. Your app is immediately live with free automatic SSL.
-
----
-
-### Option 2: Hugging Face Spaces (100% Free — 16 GB RAM)
-
-Because deep learning models (InsightFace ONNX) require ~1.2 GB RAM, Hugging Face Spaces provides the best **100% free production tier** (2 vCPU, 16 GB RAM, permanent HTTPS):
-
-1. Go to [Hugging Face Spaces](https://huggingface.co/spaces) $\rightarrow$ **Create new Space**.
-2. Space SDK: Choose **Docker** (Blank).
-3. Connect your GitHub repository (`Git-Suraj-hub/Vision_Mark`).
-4. Under **Settings $\rightarrow$ Variables and secrets**, set:
-   * `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_DISABLED=False`.
-5. Your application will build and stay online 24/7 with zero cost.
-
----
-
-### Option 3: Docker Container
-
-Build and run anywhere with Docker:
-
-```bash
-# 1. Clone repository
-git clone https://github.com/Git-Suraj-hub/Vision_Mark.git
-cd Vision_Mark
-
-# 2. Configure environment
-cp pythonProject4/.env.example .env
-# Edit .env with your TiDB Cloud or MySQL credentials
-
-# 3. Build and launch container
-docker build -t vision-mark .
-docker run -p 8000:8000 --env-file .env vision-mark
-```
-
-Access at `http://localhost:8000`.
 
 ---
 
@@ -342,9 +278,6 @@ python pythonProject4/tests/test_security_suite.py
 
 ```
 Vision_Mark/
-├── Dockerfile                      # Universal Docker container configuration
-├── main.py                         # Root entrypoint for cloud hosting
-├── render.yaml                     # 1-Click Render Cloud deployment blueprint
 ├── requirements.txt                # Production Python dependencies
 ├── README.md                       # Comprehensive documentation
 ├── pythonProject4/
