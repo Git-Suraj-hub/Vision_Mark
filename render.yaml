@@ -1,22 +1,24 @@
 services:
   - type: web
     name: vision-mark
-    runtime: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python main.py
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
     envVars:
       - key: PORT
         value: 8000
       - key: HOST
         value: 0.0.0.0
+      - key: INSIGHTFACE_MODEL
+        value: buffalo_l
       - key: DB_HOST
-        sync: false
+        value: gateway01.ap-northeast-1.prod.aws.tidbcloud.com
       - key: DB_PORT
         value: 4000
       - key: DB_USER
-        sync: false
+        value: 3QtZDLSqiksoXFK.root
       - key: DB_PASSWORD
-        sync: false
+        value: Co5onzrOD2uxx23U
       - key: DB_NAME
         value: face_detection
       - key: DB_SSL_DISABLED

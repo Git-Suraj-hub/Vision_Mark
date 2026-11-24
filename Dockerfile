@@ -23,6 +23,12 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Pre-download buffalo_l model at build time to prevent download delays & memory spikes at container boot
+RUN python -c "from insightface.app import FaceAnalysis; app = FaceAnalysis(name='buffalo_l', allowed_modules=['detection', 'recognition']); app.prepare(ctx_id=0, det_size=(640, 640))" && \
+    rm -f /root/.insightface/models/buffalo_l/1k3d68.onnx \
+          /root/.insightface/models/buffalo_l/2d106det.onnx \
+          /root/.insightface/models/buffalo_l/genderage.onnx
+
 # Copy application files
 COPY . /app/
 
