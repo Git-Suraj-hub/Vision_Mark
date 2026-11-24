@@ -73,13 +73,13 @@
       <div class="hero-preview-header">
         <div class="hud-camera-info">
           <span class="hud-pulse-dot" aria-hidden="true"></span>
-          <span>OPTICAL_AI_ENGINE · ARCFACE_v2.4</span>
+          <span>VISION MARK ENGINE · ARCFACE v2.4</span>
           <span style="color: #64748b; margin: 0 4px;">|</span>
-          <span id="hudTargetCount" style="color: #38bdf8; font-weight: 600;">STAGE 01 / 04</span>
+          <span id="hudTargetCount" style="color: #38bdf8; font-weight: 600;">STAGE 01 / 05</span>
         </div>
-        <span class="hud-demo-badge" title="Visual architecture simulation demonstrating how ArcFace neural network processes, aligns, embeds, and verifies identity.">
+        <span class="hud-demo-badge" title="Interactive architecture demonstration showing how Vision Mark ingests camera frames, detects multi-distance faces, extracts 512-D ArcFace embeddings, applies dynamic thresholds, and enforces timetable rules.">
           <span class="hud-demo-dot" aria-hidden="true"></span>
-          HOW FACIAL RECOGNITION WORKS
+          HOW VISION MARK RECOGNITION WORKS
         </span>
       </div>
 
@@ -87,7 +87,7 @@
       <div class="hero-feed-viewport" id="heroFeedViewport" style="background: #070b14; position: relative;">
         
         <!-- Interactive 3D Biometric Topology & Neural Scan Canvas (60 FPS, No Personal Student Photos) -->
-        <canvas id="visionPipelineCanvas" class="hero-feed-canvas" width="640" height="360" aria-label="3D Biometric Facial Landmark & Neural Recognition Visualization"></canvas>
+        <canvas id="visionPipelineCanvas" class="hero-feed-canvas" width="640" height="360" aria-label="Vision Mark Biometric Facial Landmark & Neural Recognition Visualization"></canvas>
 
         <!-- Optical Scanlines & Vignette -->
         <div class="hero-feed-scanline" aria-hidden="true"></div>
@@ -101,8 +101,8 @@
 
         <!-- Live Telemetry Readout -->
         <div class="hud-telemetry" id="hudTelemetry">
-          <span id="telemetryModel">BACKBONE: RESNET-50 (ARCFACE) · LATENCY: 18ms · 60 FPS</span>
-          <span id="telemetryStatus" style="color: #38bdf8; font-weight: 600;">STAGE 1: OPTICAL DETECTION</span>
+          <span id="telemetryModel">SOURCE: BROWSER WEBCAM (HTTPS) · FPS: 30 · RESOLUTION: 640×480</span>
+          <span id="telemetryStatus" style="color: #38bdf8; font-weight: 600;">STAGE 1: OPTICAL INGESTION</span>
         </div>
       </div>
 
@@ -123,13 +123,13 @@
           </button>
         </div>
 
-        <!-- 4 Pipeline Architecture Stage Pills -->
+        <!-- 5 Pipeline Architecture Stage Pills -->
         <div class="sim-pills-scroll" id="simPillsScroll" role="tablist" aria-label="Select pipeline stage">
-          <!-- Dynamically populated with 4 stages -->
+          <!-- Dynamically populated with 5 stages -->
         </div>
       </div>
 
-      <!-- Viewport Bottom Verification Ledger (Completely Private - Zero Student Photos or Names) -->
+      <!-- Viewport Bottom Verification Ledger (Completely Private - Zero Personal Student Photos) -->
       <div class="hero-feed-ledger">
         <div class="ledger-student-row" id="ledgerStudentRow">
           <div class="ledger-student-left">
@@ -141,7 +141,7 @@
             </div>
             <div>
               <div class="ledger-student-name" id="ledgerName">Vision Mark · Autonomous Biometric Engine</div>
-              <div class="ledger-student-detail" id="ledgerDetail">Stage 01: Optical Face Detection &amp; Spatial Alignment Active</div>
+              <div class="ledger-student-detail" id="ledgerDetail">Stage 01: Multi-Source Optical Ingestion &amp; Calibration Active</div>
             </div>
           </div>
           <span class="ledger-status-pill" id="ledgerStatusPill">
@@ -167,45 +167,55 @@
   <!-- Interactive Computer Vision Architecture Pipeline Script -->
   <script>
     (function() {
-      // 4-Stage Architecture Pipeline: How Facial Recognition Works
+      // 5-Stage Vision Mark Architecture Pipeline: How Vision Mark Facial Recognition Works
       const stages = [
         {
           num: "01",
           shortTitle: "01: Detection",
-          title: "Stage 01: Optical Face Detection & Spatial Alignment",
-          detail: "MTCNN / YOLOv8 locator scans camera frames, isolates facial boundary, and estimates 3D pitch/yaw/roll pose orientation.",
-          modelInfo: "INFERENCE: 16ms · ALGORITHM: MTCNN · POSE: FRONTAL (±3.2°)",
-          statusBadge: "FACE LOCATED (99.4%)",
+          title: "Stage 01: Multi-Distance Optical Detection & Spatial Bounding",
+          detail: "InsightFace det_10g detector (640×640) dynamically computes face bounding box width, classifying distance into Very Close (≥150px), Close (80px), Mid (40px), or Far (20px).",
+          modelInfo: "DETECTOR: InsightFace buffalo_l (det_10g) · 640×640 · DISTANCE: MID (68px)",
+          statusBadge: "FACE LOCATED · MID (68px)",
           statusColor: "#38bdf8",
-          statusText: "FACE LOCATED"
+          statusText: "FACE DETECTED"
         },
         {
           num: "02",
-          shortTitle: "02: 68-Pt Mesh",
-          title: "Stage 02: 68-Point Biometric Topology Alignment",
-          detail: "Maps 68 biological fiducial landmarks across jawline, eyebrows, eye contours, nose bridge, and lips to eliminate perspective distortion.",
-          modelInfo: "INFERENCE: 22ms · FIDUCIAL NODES: 68/68 · AFFINE NORMALIZED",
-          statusBadge: "TOPOLOGY ALIGNED",
+          shortTitle: "02: 5-Point Mesh",
+          title: "Stage 02: 5-Point Facial Landmark Alignment & Affine Normalization",
+          detail: "Locates 5 key fiducial anchors (left/right eyes, nose tip, mouth corners) to construct an affine transformation matrix, rectifying pitch, yaw, and roll to a canonical 112×112 crop.",
+          modelInfo: "LANDMARKS: 5/5 ANCHORS · AFFINE WARP: 112×112 · YAW: -2.4° PITCH: +1.1°",
+          statusBadge: "5-POINT AFFINE ALIGNED",
           statusColor: "#22c55e",
           statusText: "TOPOLOGY ALIGNED"
         },
         {
           num: "03",
-          shortTitle: "03: 512-D Tensor",
-          title: "Stage 03: ArcFace Deep Neural Feature Extraction",
-          detail: "ResNet-50 CNN backbone extracts discriminative facial features, projecting identity geometry into 512-dimensional hypersphere vector ℝ⁵¹².",
-          modelInfo: "INFERENCE: 28ms · TENSOR: 512-D FLOAT32 · HYPERSPHERE S⁵¹¹",
+          shortTitle: "03: 512-D ArcFace",
+          title: "Stage 03: ArcFace ResNet-50 512-D Deep Embedding Extraction",
+          detail: "Deep residual network (w600k_r50.onnx) maps normalized facial morphology onto a 512-dimensional hypersphere ℝ⁵¹² with L2 unit norm normalization (||E||₂ = 1.0).",
+          modelInfo: "BACKBONE: ResNet-50 (w600k_r50) · EMBEDDING: ℝ⁵¹² FLOAT32 · L2 NORM: 1.000",
           statusBadge: "512-D VECTOR MINTED",
           statusColor: "#a855f7",
           statusText: "EMBEDDING COMPUTED"
         },
         {
           num: "04",
-          shortTitle: "04: Verification",
-          title: "Stage 04: Cosine Distance Matching & Attendance Ledger",
-          detail: "Computes angular cosine distance margin (θ < 0.35 rad, similarity ≥ 99.4%) against database embeddings and commits verified attendance record.",
-          modelInfo: "MATCH: 99.6% · COSINE THRESHOLD: 0.68 · RECORD ENCRYPTED",
-          statusBadge: "VERIFIED PRESENT",
+          shortTitle: "04: Cascade Match",
+          title: "Stage 04: Multi-Level Distance Cascade & Dynamic Cosine Verification",
+          detail: "Cascaded match strategy: queries same distance category ('mid'), then adjacent categories ('close'/'far'), then category average. Verifies against dynamic distance threshold (≥ 0.300).",
+          modelInfo: "CASCADE: LEVEL 1 (SAME CATEGORY) · COSINE SIMILARITY: 0.892 ≥ 0.300",
+          statusBadge: "CASCADE MATCH VERIFIED (89.2%)",
+          statusColor: "#06b6d4",
+          statusText: "MATCH VERIFIED"
+        },
+        {
+          num: "05",
+          shortTitle: "05: ERP Ledger",
+          title: "Stage 05: Timetable Mapping, 60s Duplicate Suppression & Cloud ERP Commit",
+          detail: "Validates active classroom lecture timetable, enforces 60-second duplicate suppression window, increments student session total, and writes certified encrypted attendance to ERP database.",
+          modelInfo: "TIMETABLE: CS-301 · 60S COOLDOWN: ARMED · DB: TiDB ENCRYPTED · STATUS: COMMITTED",
+          statusBadge: "ATTENDANCE COMMITTED",
           statusColor: "#10b981",
           statusText: "RECORD CERTIFIED"
         }
@@ -231,7 +241,7 @@
       let currentStageIdx = 0;
       let isPlaying = true;
       let stageTimer = null;
-      const stageDurationMs = 3800;
+      const stageDurationMs = 4000;
 
       // 68 3D Fiducial Landmark Coordinates [X, Y, Z]
       const landmarks3D = [
@@ -288,13 +298,17 @@
         [1,36],[13,45],[3,48],[11,54]
       ];
 
+      // 5 Key InsightFace Landmark Indices:
+      // Left Eye: 39, Right Eye: 42, Nose Tip: 33, Mouth Left: 48, Mouth Right: 54
+      const keyLandmarks5 = [39, 42, 33, 48, 54];
+
       // Simulated ArcFace 512-D Vector stream
       const tensorSample = [
         "+0.318", "-0.874", "+0.129", "-0.655", "+0.449", "-0.098", "+0.781",
         "-0.231", "+0.542", "-0.119", "+0.893", "-0.407", "+0.612", "-0.324"
       ];
 
-      // Populate 4 Stage Pills
+      // Populate 5 Stage Pills
       stages.forEach((st, idx) => {
         const btn = document.createElement('button');
         btn.className = `sim-student-pill ${idx === 0 ? 'active' : ''}`;
@@ -328,7 +342,7 @@
         const st = stages[idx];
         if (!st) return;
 
-        targetCount.textContent = `STAGE ${st.num} / 04`;
+        targetCount.textContent = `STAGE ${st.num} / 05`;
         telemetryStatus.textContent = st.statusBadge;
         telemetryStatus.style.color = st.statusColor;
         telemetryModel.textContent = st.modelInfo;
@@ -366,7 +380,7 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        // 1. Tech Grid Background
+        // 1. High-Tech Dark Grid Background
         ctx.fillStyle = "#070b14";
         ctx.fillRect(0, 0, w, h);
 
@@ -414,15 +428,15 @@
 
         // 3. Draw Triangulation Edges
         const stage = currentStageIdx;
-        const edgeColor = stage === 0 
-          ? "rgba(56, 189, 248, 0.28)" 
-          : stage === 1 
-            ? "rgba(34, 197, 94, 0.45)"
-            : stage === 2 
-              ? "rgba(168, 85, 247, 0.40)"
-              : "rgba(16, 185, 129, 0.55)";
+        const edgeColors = [
+          "rgba(56, 189, 248, 0.28)",  // Stage 0: Detection (Cyan)
+          "rgba(34, 197, 94, 0.45)",   // Stage 1: Affine Alignment (Emerald)
+          "rgba(168, 85, 247, 0.40)",  // Stage 2: 512-D ArcFace (Purple)
+          "rgba(6, 182, 212, 0.50)",   // Stage 3: Cascade Match (Cyan/Blue)
+          "rgba(16, 185, 129, 0.55)"   // Stage 4: ERP Ledger (Green)
+        ];
 
-        ctx.strokeStyle = edgeColor;
+        ctx.strokeStyle = edgeColors[stage] || "rgba(56, 189, 248, 0.3)";
         ctx.lineWidth = stage === 1 ? 1.5 : 1.2;
         ctx.beginPath();
         edges.forEach(([i, j]) => {
@@ -435,18 +449,27 @@
 
         // 4. Draw Landmark Nodes
         projected.forEach((p, idx) => {
-          const isKeyAnchor = [30, 36, 45, 48, 54, 8].includes(idx);
-          const r = (isKeyAnchor ? 3.0 : 1.8) * p.scale;
-          ctx.fillStyle = isKeyAnchor ? "#38bdf8" : (stage === 1 ? "#22c55e" : "#67e8f9");
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          ctx.fill();
+          const is5KeyAnchor = keyLandmarks5.includes(idx);
+          const r = (is5KeyAnchor ? 3.2 : 1.8) * p.scale;
+          
+          if (stage === 1 && is5KeyAnchor) {
+            // Stage 2: Highlight 5 keypoints with pulsating green rings
+            ctx.fillStyle = "#22c55e";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r * 1.4, 0, Math.PI * 2);
+            ctx.fill();
 
-          // Stage 2: Draw occasional coordinate labels
-          if (stage === 1 && idx % 11 === 0) {
-            ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
-            ctx.font = "9px ui-monospace, monospace";
-            ctx.fillText(`P${idx}`, p.x + 4, p.y - 4);
+            ctx.strokeStyle = "rgba(34, 197, 94, 0.6)";
+            ctx.lineWidth = 1.2;
+            const pulseR = (r * 1.8) + (Math.sin(elapsed * 6) + 1) * 2;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pulseR, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = is5KeyAnchor ? "#38bdf8" : (stage === 1 ? "#22c55e" : "#67e8f9");
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+            ctx.fill();
           }
         });
 
@@ -454,21 +477,21 @@
         const scanY = cy + Math.sin(elapsed * 2.8) * (h * 0.38);
         const grad = ctx.createLinearGradient(0, scanY - 30, 0, scanY + 30);
         grad.addColorStop(0, "rgba(56, 189, 248, 0)");
-        grad.addColorStop(0.5, "rgba(34, 197, 94, 0.45)");
+        grad.addColorStop(0.5, stage === 2 ? "rgba(168, 85, 247, 0.45)" : "rgba(34, 197, 94, 0.45)");
         grad.addColorStop(1, "rgba(56, 189, 248, 0)");
         ctx.fillStyle = grad;
         ctx.fillRect(cx - 160, scanY - 25, 320, 50);
 
-        ctx.strokeStyle = "rgba(34, 197, 94, 0.85)";
+        ctx.strokeStyle = stage === 2 ? "rgba(168, 85, 247, 0.85)" : "rgba(34, 197, 94, 0.85)";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(cx - 150, scanY);
         ctx.lineTo(cx + 150, scanY);
         ctx.stroke();
 
-        // 6. Stage-Specific Overlays
+        // 6. STAGE-SPECIFIC REAL VISION MARK OVERLAYS
         if (stage === 0) {
-          // Stage 1: Detection Bounding Box & Target Lock
+          // STAGE 01: Multi-Distance Optical Detection (InsightFace det_10g)
           const minX = Math.min(...projected.map(p => p.x)) - 18;
           const maxX = Math.max(...projected.map(p => p.x)) + 18;
           const minY = Math.min(...projected.map(p => p.y)) - 22;
@@ -476,52 +499,109 @@
           const boxW = maxX - minX;
           const boxH = maxY - minY;
 
+          // Bounding Box
           ctx.strokeStyle = "#38bdf8";
           ctx.lineWidth = 1.5;
           ctx.strokeRect(minX, minY, boxW, boxH);
 
           // Header tag
           ctx.fillStyle = "#38bdf8";
-          ctx.fillRect(minX, minY - 20, 150, 20);
+          ctx.fillRect(minX, minY - 22, 190, 22);
           ctx.fillStyle = "#041728";
           ctx.font = "bold 10px ui-monospace, monospace";
-          ctx.fillText("MTCNN: FACE LOCATED", minX + 6, minY - 6);
+          ctx.fillText("InsightFace det_10g (640×640)", minX + 6, minY - 7);
+
+          // Distance Category Footer Badge
+          ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+          ctx.lineWidth = 1;
+          ctx.fillRect(minX, maxY + 4, 210, 24);
+          ctx.strokeRect(minX, maxY + 4, 210, 24);
+
+          ctx.fillStyle = "#38bdf8";
+          ctx.font = "bold 9.5px ui-monospace, monospace";
+          ctx.fillText("CATEGORY: MID · 68px (≥40px)", minX + 8, maxY + 20);
 
           // Center crosshair
           ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
           ctx.beginPath();
-          ctx.moveTo(cx - 12, cy); ctx.lineTo(cx + 12, cy);
-          ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy + 12);
+          ctx.moveTo(cx - 14, cy); ctx.lineTo(cx + 14, cy);
+          ctx.moveTo(cx, cy - 14); ctx.lineTo(cx, cy + 14);
           ctx.stroke();
 
         } else if (stage === 1) {
-          // Stage 2: 68-Point Topology Alignment HUD
+          // STAGE 02: 5-Point Affine Landmark Alignment & Pose Normalization
           ctx.fillStyle = "rgba(34, 197, 94, 0.9)";
-          ctx.font = "11px ui-monospace, monospace";
-          ctx.fillText("FIDUCIAL 68-POINT TOPOLOGY", 20, 36);
+          ctx.font = "bold 11px ui-monospace, monospace";
+          ctx.fillText("5-POINT AFFINE WARP: NORMALIZED 112×112", 20, 36);
+
+          // Affine interconnects between the 5 keypoints
+          const pLeftEye = projected[39];
+          const pRightEye = projected[42];
+          const pNose = projected[33];
+          const pMouthL = projected[48];
+          const pMouthR = projected[54];
+
+          if (pLeftEye && pRightEye && pNose && pMouthL && pMouthR) {
+            ctx.strokeStyle = "rgba(34, 197, 94, 0.8)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(pLeftEye.x, pLeftEye.y);
+            ctx.lineTo(pRightEye.x, pRightEye.y);
+            ctx.lineTo(pNose.x, pNose.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(pNose.x, pNose.y);
+            ctx.lineTo(pMouthL.x, pMouthL.y);
+            ctx.lineTo(pMouthR.x, pMouthR.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Coordinate tags for the 5 anchors
+            ctx.fillStyle = "#e2e8f0";
+            ctx.font = "9px ui-monospace, monospace";
+            ctx.fillText("L_EYE", pLeftEye.x - 34, pLeftEye.y - 6);
+            ctx.fillText("R_EYE", pRightEye.x + 8, pRightEye.y - 6);
+            ctx.fillText("NOSE", pNose.x + 8, pNose.y + 2);
+            ctx.fillText("M_LEFT", pMouthL.x - 42, pMouthL.y + 4);
+            ctx.fillText("M_RIGHT", pMouthR.x + 8, pMouthR.y + 4);
+          }
+
           ctx.fillStyle = "rgba(148, 163, 184, 0.85)";
           ctx.font = "10px ui-monospace, monospace";
-          ctx.fillText(`YAW: ${(yaw * 57.3).toFixed(1)}°   PITCH: ${(pitch * 57.3).toFixed(1)}°`, 20, 52);
+          ctx.fillText(`YAW: ${(yaw * 57.3).toFixed(1)}°   PITCH: ${(pitch * 57.3).toFixed(1)}°   AFFINE: ALIGNED`, 20, 54);
 
         } else if (stage === 2) {
-          // Stage 3: Deep Neural Feature Extraction (512-D Tensor Stream)
+          // STAGE 03: ArcFace ResNet-50 512-D Feature Embedding Extraction
           ctx.fillStyle = "#a855f7";
           ctx.font = "bold 11px ui-monospace, monospace";
-          ctx.fillText("ARCFACE 512-DIMENSIONAL EMBEDDING VECTOR", 20, 36);
+          ctx.fillText("ARCFACE ResNet-50 (w600k_r50.onnx) · ℝ⁵¹² HYPERSPHERE", 20, 36);
           
           // Floating Tensor Vector Stream
           ctx.fillStyle = "rgba(226, 232, 240, 0.9)";
           ctx.font = "10px ui-monospace, monospace";
           ctx.fillText(`f(x) ∈ ℝ⁵¹² = [ ${tensorSample.join(", ")} ... ]`, 20, 54);
 
-          // Neural ray projection lines
+          // Unit norm badge
+          ctx.fillStyle = "rgba(168, 85, 247, 0.15)";
+          ctx.strokeStyle = "#a855f7";
+          ctx.lineWidth = 1;
+          ctx.fillRect(20, 68, 260, 24);
+          ctx.strokeRect(20, 68, 260, 24);
+          ctx.fillStyle = "#d8b4fe";
+          ctx.font = "9.5px ui-monospace, monospace";
+          ctx.fillText("||f(x)||₂ = 1.000000 (Unit Hypersphere S⁵¹¹)", 26, 84);
+
+          // Neural ray projection lines to embedding nodes
           ctx.strokeStyle = "rgba(168, 85, 247, 0.5)";
           ctx.lineWidth = 1;
-          [30, 36, 45, 51].forEach((k, idx) => {
+          keyLandmarks5.forEach((k, idx) => {
             const p = projected[k];
             if (p) {
-              const targetX = w - 80;
-              const targetY = 80 + idx * 40;
+              const targetX = w - 70;
+              const targetY = 70 + idx * 36;
               ctx.beginPath();
               ctx.moveTo(p.x, p.y);
               ctx.lineTo(targetX, targetY);
@@ -531,49 +611,128 @@
               ctx.beginPath();
               ctx.arc(targetX, targetY, 4, 0, Math.PI*2);
               ctx.fill();
+
+              ctx.fillStyle = "#e2e8f0";
+              ctx.font = "9px ui-monospace, monospace";
+              ctx.fillText(`D${(idx+1)*102}`, targetX + 8, targetY + 3);
             }
           });
 
         } else if (stage === 3) {
-          // Stage 4: Cosine Metric Hypersphere Matching
-          const meterX = w - 90;
+          // STAGE 04: Multi-Distance Hierarchical Cascade & Dynamic Cosine Matching
+          // Circular Cosine Meter on right
+          const meterX = w - 85;
           const meterY = cy;
-          const meterR = 48;
+          const meterR = 46;
 
-          // Background arc
+          // Background meter track
           ctx.strokeStyle = "rgba(30, 41, 59, 0.8)";
           ctx.lineWidth = 6;
           ctx.beginPath();
           ctx.arc(meterX, meterY, meterR, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Active match arc (99.6%)
-          ctx.strokeStyle = "#10b981";
+          // Active match arc (89.2% match)
+          ctx.strokeStyle = "#06b6d4";
           ctx.lineWidth = 6;
           ctx.beginPath();
-          ctx.arc(meterX, meterY, meterR, -Math.PI * 0.5, Math.PI * 1.48);
+          ctx.arc(meterX, meterY, meterR, -Math.PI * 0.5, Math.PI * 1.28);
           ctx.stroke();
 
-          // Text in center
-          ctx.fillStyle = "#10b981";
+          // Text inside meter
+          ctx.fillStyle = "#06b6d4";
           ctx.font = "bold 13px ui-monospace, monospace";
           ctx.textAlign = "center";
-          ctx.fillText("99.6%", meterX, meterY - 2);
+          ctx.fillText("0.892", meterX, meterY - 2);
           ctx.fillStyle = "#94a3b8";
           ctx.font = "9px ui-monospace, monospace";
           ctx.fillText("COSINE", meterX, meterY + 12);
           ctx.textAlign = "left";
 
-          // Certified Banner
-          ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
-          ctx.strokeStyle = "#10b981";
+          // Cascade Strategy Hierarchy Card
+          ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+          ctx.strokeStyle = "rgba(6, 182, 212, 0.5)";
           ctx.lineWidth = 1;
-          ctx.fillRect(20, 24, 220, 32);
-          ctx.strokeRect(20, 24, 220, 32);
+          ctx.fillRect(16, 20, 270, 92);
+          ctx.strokeRect(16, 20, 270, 92);
+
+          ctx.fillStyle = "#06b6d4";
+          ctx.font = "bold 10px ui-monospace, monospace";
+          ctx.fillText("CASCADE SEARCH STRATEGY (4 LEVELS):", 24, 36);
+
+          ctx.fillStyle = "#10b981";
+          ctx.font = "9.5px ui-monospace, monospace";
+          ctx.fillText("[✓] L1: SAME DISTANCE ('mid') → MATCH!", 24, 52);
+
+          ctx.fillStyle = "rgba(148, 163, 184, 0.7)";
+          ctx.fillText("[ ] L2: ADJACENT ('close' / 'far')", 24, 68);
+          ctx.fillText("[ ] L3: CATEGORY AVERAGE FALLBACK", 24, 82);
+          ctx.fillText("[ ] L4: GLOBAL CENTROID (LAST RESORT)", 24, 96);
+
+          // Threshold check pill at bottom
+          ctx.fillStyle = "rgba(6, 182, 212, 0.12)";
+          ctx.strokeStyle = "rgba(6, 182, 212, 0.4)";
+          ctx.fillRect(16, h - 38, 270, 24);
+          ctx.strokeRect(16, h - 38, 270, 24);
+          ctx.fillStyle = "#38bdf8";
+          ctx.font = "9.5px ui-monospace, monospace";
+          ctx.fillText("SIMILARITY: 0.892 ≥ THRESHOLD 0.300 (PASS)", 24, h - 22);
+
+        } else if (stage === 4) {
+          // STAGE 05: Academic Timetable Enforcement, 60s Duplicate Suppression & ERP Commit
+          // Certified Card
+          ctx.fillStyle = "rgba(6, 78, 59, 0.25)";
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 1.2;
+          ctx.fillRect(16, 18, 310, 114);
+          ctx.strokeRect(16, 18, 310, 114);
 
           ctx.fillStyle = "#10b981";
           ctx.font = "bold 11px ui-monospace, monospace";
-          ctx.fillText("✓ ATTENDANCE MINTED & CERTIFIED", 30, 44);
+          ctx.fillText("✓ ATTENDANCE COMMITTED & CERTIFIED", 26, 36);
+
+          ctx.fillStyle = "#f8fafc";
+          ctx.font = "10px ui-monospace, monospace";
+          ctx.fillText("STUDENT: 2024CS0142 · AARAV SHARMA", 26, 56);
+          ctx.fillText("ACTIVE LECTURE: CS-301 (DATA STRUCTURES)", 26, 72);
+
+          ctx.fillStyle = "#38bdf8";
+          ctx.fillText("SESSION INCREMENT: +1 (LECTURE #14 TOTAL)", 26, 88);
+
+          ctx.fillStyle = "#facc15";
+          ctx.fillText("60s ANTI-DUPLICATE: COOLDOWN ARMED (59s)", 26, 104);
+
+          ctx.fillStyle = "#94a3b8";
+          ctx.font = "9px ui-monospace, monospace";
+          ctx.fillText("DATABASE: TiDB CLOUD / MySQL [TLS/ENCRYPTED]", 26, 120);
+
+          // Big Green Certified Checkmark Badge on right
+          const badgeX = w - 75;
+          const badgeY = cy;
+          ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(badgeX, badgeY, 36, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 3.5;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          ctx.moveTo(badgeX - 14, badgeY);
+          ctx.lineTo(badgeX - 4, badgeY + 11);
+          ctx.lineTo(badgeX + 16, badgeY - 11);
+          ctx.stroke();
+          ctx.lineCap = "butt";
+
+          ctx.fillStyle = "#10b981";
+          ctx.font = "bold 9px ui-monospace, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("RECORDED", badgeX, badgeY + 28);
+          ctx.textAlign = "left";
         }
 
         animationFrameId = requestAnimationFrame(render);
