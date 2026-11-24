@@ -510,16 +510,25 @@ class AdvancedFaceRecognition:
 
         return result_img, faces
 
-    def run_webcam(self, show_window=False):
-        """Run webcam recognition"""
-        print(f"[INFO] Starting webcam (desktop window: {show_window})...")
-        cap = cv2.VideoCapture(0)
+    def run_webcam(self, source=0, show_window=False):
+        """Run webcam or network camera stream recognition (supports device index, Phone IP stream, or CCTV RTSP)"""
+        parsed_source = source
+        if isinstance(source, str):
+            source_str = source.strip()
+            if source_str.isdigit():
+                parsed_source = int(source_str)
+            else:
+                parsed_source = source_str
+        print(f"[INFO] Starting camera recognition on source '{parsed_source}' (desktop window: {show_window})...")
+        cap = cv2.VideoCapture(parsed_source)
         if not cap.isOpened():
-            print("[ERROR] Could not open webcam")
+            print(f"[ERROR] Could not open camera source '{parsed_source}'")
             return
 
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        # Attempt to request HD resolution for webcams
+        if isinstance(parsed_source, int):
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         self.running = True
         frame_count = 0

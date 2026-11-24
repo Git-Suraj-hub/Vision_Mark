@@ -3,43 +3,650 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Attendance System</title>
+  <title>Vision Mark — Automated Academic Face Recognition & Attendance</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
-  <link href="/static/css/style.css?v=5" rel="stylesheet">
-  <style>
-   .features{
-    margin: 10px;
-   }
-  </style>
+  <link href="/static/css/style.css?v=8" rel="stylesheet">
 </head>
 <body class="landing-page">
-  <div class="logo-background"></div>
-  
-  <div class="container landing-container">
-    <div class="landing-header">
-      <img src="/static/images/logo.png" alt="Logo" class="landing-logo">
-      <h1 class="landing-title">Smart Attendance System</h1>
-      <p class="landing-subtitle">Automated Face Recognition & Attendance Management</p>
+
+  <!-- Quiet Institutional Navigation -->
+  <header class="landing-nav">
+    <div class="navbar-brand">
+      <img src="/static/images/logo.png" alt="Vision Mark Logo" class="navbar-logo">
+      <span>Vision Mark</span>
     </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 0.82rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: var(--radius-xs); background: var(--bg-surface-raised);">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+        Operational
+      </span>
+      <a href="/login/teacher" class="btn btn-secondary btn-small">Faculty Login</a>
+      <a href="/login/student" class="btn btn-primary btn-small">Student Portal</a>
+    </div>
+  </header>
+
+  <!-- Hero Section: Asymmetric Split with Rich Product Moment -->
+  <main class="landing-hero">
     
-    <div class="card landing-card">
-      <div class="login-options">
-        <a class="btn btn-primary btn-large" href="/login/student">
-          <span class="btn-icon"></span>
-          <span>Student Login</span>
+    <!-- Left Column: Clear Value Proposition -->
+    <section class="hero-copy">
+      <div style="display: inline-flex; align-items: center; gap: 6px; background: var(--accent-surface); border: 1px solid var(--accent-border); color: var(--accent-text); padding: 4px 10px; border-radius: var(--radius-xs); font-size: 0.78rem; font-weight: 600; margin-bottom: 20px;">
+        Institutional Computer Vision
+      </div>
+      
+      <h1>Automated classroom attendance via computer vision</h1>
+      
+      <p>
+        Multi-distance face verification with dual ArcFace and RetinaFace models. Timetable-enforced logging, automated absent marking, and instant university compliance reporting.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-large" href="/login/teacher">
+          <span>Faculty Portal</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a class="btn btn-secondary btn-large" href="/login/teacher">
-          <span class="btn-icon"></span>
-          <span>Teacher Login</span>
+        <a class="btn btn-secondary btn-large" href="/login/student">
+          <span>Student Portal</span>
         </a>
       </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border-subtle);">
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); font-family: ui-monospace, monospace;">&lt; 50ms</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Inference latency</div>
+        </div>
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); font-family: ui-monospace, monospace;">20px - 150px</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Multi-distance range</div>
+        </div>
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); font-family: ui-monospace, monospace;">75%</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Rule auto-auditing</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Rich Architecture Preview (How Facial Recognition Works) -->
+    <section class="hero-preview" aria-label="Computer Vision & Biometric Pipeline Architecture">
+      
+      <!-- Viewport Header -->
+      <div class="hero-preview-header">
+        <div class="hud-camera-info">
+          <span class="hud-pulse-dot" aria-hidden="true"></span>
+          <span>OPTICAL_AI_ENGINE · ARCFACE_v2.4</span>
+          <span style="color: #64748b; margin: 0 4px;">|</span>
+          <span id="hudTargetCount" style="color: #38bdf8; font-weight: 600;">STAGE 01 / 04</span>
+        </div>
+        <span class="hud-demo-badge" title="Visual architecture simulation demonstrating how ArcFace neural network processes, aligns, embeds, and verifies identity.">
+          <span class="hud-demo-dot" aria-hidden="true"></span>
+          HOW FACIAL RECOGNITION WORKS
+        </span>
+      </div>
+
+      <!-- Viewport Media Container: High-Tech 3D Biometric Topology & Neural Scan Canvas -->
+      <div class="hero-feed-viewport" id="heroFeedViewport" style="background: #070b14; position: relative;">
+        
+        <!-- Interactive 3D Biometric Topology & Neural Scan Canvas (60 FPS, No Personal Student Photos) -->
+        <canvas id="visionPipelineCanvas" class="hero-feed-canvas" width="640" height="360" aria-label="3D Biometric Facial Landmark & Neural Recognition Visualization"></canvas>
+
+        <!-- Optical Scanlines & Vignette -->
+        <div class="hero-feed-scanline" aria-hidden="true"></div>
+        <div class="hero-feed-vignette" aria-hidden="true"></div>
+
+        <!-- Corner Reticle Brackets -->
+        <div class="hud-corner-bracket hud-corner-tl" aria-hidden="true"></div>
+        <div class="hud-corner-bracket hud-corner-tr" aria-hidden="true"></div>
+        <div class="hud-corner-bracket hud-corner-bl" aria-hidden="true"></div>
+        <div class="hud-corner-bracket hud-corner-br" aria-hidden="true"></div>
+
+        <!-- Live Telemetry Readout -->
+        <div class="hud-telemetry" id="hudTelemetry">
+          <span id="telemetryModel">BACKBONE: RESNET-50 (ARCFACE) · LATENCY: 18ms · 60 FPS</span>
+          <span id="telemetryStatus" style="color: #38bdf8; font-weight: 600;">STAGE 1: OPTICAL DETECTION</span>
+        </div>
+      </div>
+
+      <!-- Interactive Architecture Stage Control Ribbon -->
+      <div class="simulator-control-ribbon" aria-label="Pipeline Architecture Stages">
+        <div class="sim-nav-group">
+          <button class="sim-ctrl-btn" id="simPrevBtn" title="Previous Stage" aria-label="Previous Stage">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Prev</span>
+          </button>
+          <button class="sim-ctrl-btn" id="simPlayPauseBtn" title="Toggle Auto-Cycle" aria-label="Toggle Auto-Cycle">
+            <svg id="simPlayPauseIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            <span id="simPlayPauseText">Pause</span>
+          </button>
+          <button class="sim-ctrl-btn" id="simNextBtn" title="Next Stage" aria-label="Next Stage">
+            <span>Next</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+
+        <!-- 4 Pipeline Architecture Stage Pills -->
+        <div class="sim-pills-scroll" id="simPillsScroll" role="tablist" aria-label="Select pipeline stage">
+          <!-- Dynamically populated with 4 stages -->
+        </div>
+      </div>
+
+      <!-- Viewport Bottom Verification Ledger (Completely Private - Zero Student Photos or Names) -->
+      <div class="hero-feed-ledger">
+        <div class="ledger-student-row" id="ledgerStudentRow">
+          <div class="ledger-student-left">
+            <div class="ledger-student-avatar" id="ledgerAvatar" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="ledger-student-name" id="ledgerName">Vision Mark · Autonomous Biometric Engine</div>
+              <div class="ledger-student-detail" id="ledgerDetail">Stage 01: Optical Face Detection &amp; Spatial Alignment Active</div>
+            </div>
+          </div>
+          <span class="ledger-status-pill" id="ledgerStatusPill">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="ledgerStatusText">PIPELINE ACTIVE</span>
+          </span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Quiet Institutional Footer -->
+  <footer style="padding: 24px 40px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--text-muted);">
+    <div>Vision Mark Attendance Platform · Academic Version 2026</div>
+    <div style="display: flex; gap: 20px;">
+      <a href="/login/student" style="color: var(--text-secondary); text-decoration: none;">Student Portal</a>
+      <a href="/login/teacher" style="color: var(--text-secondary); text-decoration: none;">Faculty Portal</a>
     </div>
-    
-  </div>
-  
-  <footer class="landing-footer">
-    <p><b>🧠 AI-Powered Attendance System &copy; 2025 <br>
-Face Recognition · Machine Learning · Vision </b></p>
   </footer>
+
+  <!-- Interactive Computer Vision Architecture Pipeline Script -->
+  <script>
+    (function() {
+      // 4-Stage Architecture Pipeline: How Facial Recognition Works
+      const stages = [
+        {
+          num: "01",
+          shortTitle: "01: Detection",
+          title: "Stage 01: Optical Face Detection & Spatial Alignment",
+          detail: "MTCNN / YOLOv8 locator scans camera frames, isolates facial boundary, and estimates 3D pitch/yaw/roll pose orientation.",
+          modelInfo: "INFERENCE: 16ms · ALGORITHM: MTCNN · POSE: FRONTAL (±3.2°)",
+          statusBadge: "FACE LOCATED (99.4%)",
+          statusColor: "#38bdf8",
+          statusText: "FACE LOCATED"
+        },
+        {
+          num: "02",
+          shortTitle: "02: 68-Pt Mesh",
+          title: "Stage 02: 68-Point Biometric Topology Alignment",
+          detail: "Maps 68 biological fiducial landmarks across jawline, eyebrows, eye contours, nose bridge, and lips to eliminate perspective distortion.",
+          modelInfo: "INFERENCE: 22ms · FIDUCIAL NODES: 68/68 · AFFINE NORMALIZED",
+          statusBadge: "TOPOLOGY ALIGNED",
+          statusColor: "#22c55e",
+          statusText: "TOPOLOGY ALIGNED"
+        },
+        {
+          num: "03",
+          shortTitle: "03: 512-D Tensor",
+          title: "Stage 03: ArcFace Deep Neural Feature Extraction",
+          detail: "ResNet-50 CNN backbone extracts discriminative facial features, projecting identity geometry into 512-dimensional hypersphere vector ℝ⁵¹².",
+          modelInfo: "INFERENCE: 28ms · TENSOR: 512-D FLOAT32 · HYPERSPHERE S⁵¹¹",
+          statusBadge: "512-D VECTOR MINTED",
+          statusColor: "#a855f7",
+          statusText: "EMBEDDING COMPUTED"
+        },
+        {
+          num: "04",
+          shortTitle: "04: Verification",
+          title: "Stage 04: Cosine Distance Matching & Attendance Ledger",
+          detail: "Computes angular cosine distance margin (θ < 0.35 rad, similarity ≥ 99.4%) against database embeddings and commits verified attendance record.",
+          modelInfo: "MATCH: 99.6% · COSINE THRESHOLD: 0.68 · RECORD ENCRYPTED",
+          statusBadge: "VERIFIED PRESENT",
+          statusColor: "#10b981",
+          statusText: "RECORD CERTIFIED"
+        }
+      ];
+
+      // DOM Elements
+      const targetCount = document.getElementById('hudTargetCount');
+      const telemetryModel = document.getElementById('telemetryModel');
+      const telemetryStatus = document.getElementById('telemetryStatus');
+      const nameEl = document.getElementById('ledgerName');
+      const detailEl = document.getElementById('ledgerDetail');
+      const pill = document.getElementById('ledgerStatusPill');
+      const pillText = document.getElementById('ledgerStatusText');
+      const pillsContainer = document.getElementById('simPillsScroll');
+      const prevBtn = document.getElementById('simPrevBtn');
+      const nextBtn = document.getElementById('simNextBtn');
+      const playPauseBtn = document.getElementById('simPlayPauseBtn');
+      const playPauseText = document.getElementById('simPlayPauseText');
+      const playPauseIcon = document.getElementById('simPlayPauseIcon');
+      const canvas = document.getElementById('visionPipelineCanvas');
+      const ctx = canvas.getContext('2d');
+
+      let currentStageIdx = 0;
+      let isPlaying = true;
+      let stageTimer = null;
+      const stageDurationMs = 3800;
+
+      // 68 3D Fiducial Landmark Coordinates [X, Y, Z]
+      const landmarks3D = [
+        // Jawline (0 to 14)
+        [-75, -25, -45], [-72, 0, -40], [-68, 25, -30], [-60, 50, -18], [-45, 70, -5],
+        [-28, 85, 10], [-10, 92, 18], [0, 95, 20], [10, 92, 18], [28, 85, 10],
+        [45, 70, -5], [60, 50, -18], [68, 25, -30], [72, 0, -40], [75, -25, -45],
+        // Upper temples (15, 16)
+        [-52, -62, -35], [52, -62, -35],
+        // Left Eyebrow (17 to 21)
+        [-60, -48, -25], [-45, -58, -20], [-30, -60, -15], [-16, -58, -10], [-5, -52, -8],
+        // Right Eyebrow (22 to 26)
+        [5, -52, -8], [16, -58, -10], [30, -60, -15], [45, -58, -20], [60, -48, -25],
+        // Nose Bridge & Tip (27 to 35)
+        [0, -42, 2], [0, -25, 14], [0, -8, 25], [0, 10, 34],
+        [-16, 16, 20], [-8, 20, 26], [0, 22, 28], [8, 20, 26], [16, 16, 20],
+        // Left Eye (36 to 41)
+        [-50, -38, -20], [-38, -44, -18], [-26, -42, -14], [-22, -37, -13], [-34, -33, -16], [-46, -34, -18],
+        // Right Eye (42 to 47)
+        [22, -37, -13], [26, -42, -14], [38, -44, -18], [50, -38, -20], [46, -34, -18], [34, -33, -16],
+        // Outer Lips (48 to 59)
+        [-30, 44, 12], [-18, 38, 18], [-8, 36, 22], [0, 36, 24], [8, 36, 22], [18, 38, 18], [30, 44, 12],
+        [22, 54, 18], [10, 58, 20], [0, 59, 21], [-10, 58, 20], [-22, 54, 18],
+        // Inner Lips (60 to 67)
+        [-22, 45, 14], [-8, 42, 20], [0, 42, 21], [8, 42, 20], [22, 45, 14],
+        [12, 49, 18], [0, 50, 19], [-12, 49, 18]
+      ];
+
+      // Triangulation & Wireframe Connections
+      const edges = [
+        // Jawline
+        [0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],
+        // Temples to brows
+        [15,17],[16,26],[15,0],[16,14],
+        // Brows
+        [17,18],[18,19],[19,20],[20,21], [22,23],[23,24],[24,25],[25,26],
+        // Nose bridge
+        [27,28],[28,29],[29,30],[30,33],
+        // Nose base
+        [31,32],[32,33],[33,34],[34,35], [29,31],[29,35],
+        // Left Eye
+        [36,37],[37,38],[38,39],[39,40],[40,41],[41,36],
+        // Right Eye
+        [42,43],[43,44],[44,45],[45,46],[46,47],[47,42],
+        // Outer Lips
+        [48,49],[49,50],[50,51],[51,52],[52,53],[53,54],[54,55],[55,56],[56,57],[57,58],[58,59],[59,48],
+        // Inner Lips
+        [60,61],[61,62],[62,63],[63,64],[64,65],[65,66],[66,67],[67,60],
+        // Facial Triangulation Connectors
+        [19,27],[24,27],[21,27],[22,27],
+        [36,28],[45,28],[39,29],[42,29],
+        [30,48],[30,54],[33,51],[33,49],[33,53],
+        [2,48],[12,54],[4,57],[10,57],[6,57],[8,57],
+        [1,36],[13,45],[3,48],[11,54]
+      ];
+
+      // Simulated ArcFace 512-D Vector stream
+      const tensorSample = [
+        "+0.318", "-0.874", "+0.129", "-0.655", "+0.449", "-0.098", "+0.781",
+        "-0.231", "+0.542", "-0.119", "+0.893", "-0.407", "+0.612", "-0.324"
+      ];
+
+      // Populate 4 Stage Pills
+      stages.forEach((st, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `sim-student-pill ${idx === 0 ? 'active' : ''}`;
+        btn.textContent = st.shortTitle;
+        btn.title = st.title;
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', idx === 0 ? 'true' : 'false');
+        btn.addEventListener('click', () => {
+          setStage(idx);
+          resetAutoCycle();
+        });
+        pillsContainer.appendChild(btn);
+      });
+
+      function updatePills(idx) {
+        const all = pillsContainer.querySelectorAll('.sim-student-pill');
+        all.forEach((p, i) => {
+          if (i === idx) {
+            p.classList.add('active');
+            p.setAttribute('aria-selected', 'true');
+            p.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          } else {
+            p.classList.remove('active');
+            p.setAttribute('aria-selected', 'false');
+          }
+        });
+      }
+
+      function setStage(idx) {
+        currentStageIdx = idx;
+        const st = stages[idx];
+        if (!st) return;
+
+        targetCount.textContent = `STAGE ${st.num} / 04`;
+        telemetryStatus.textContent = st.statusBadge;
+        telemetryStatus.style.color = st.statusColor;
+        telemetryModel.textContent = st.modelInfo;
+
+        nameEl.textContent = st.title;
+        detailEl.textContent = st.detail;
+        pillText.textContent = st.statusText;
+        pill.style.borderColor = st.statusColor;
+
+        updatePills(idx);
+      }
+
+      // ==========================================
+      // 3D CANVAS BIOMETRIC ENGINE (60 FPS)
+      // ==========================================
+      let animationFrameId = null;
+      let startTime = performance.now();
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          ctx.scale(dpr, dpr);
+        }
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      function render(now) {
+        const elapsed = (now - startTime) / 1000;
+        const w = canvas.getBoundingClientRect().width || 640;
+        const h = canvas.getBoundingClientRect().height || 360;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // 1. Tech Grid Background
+        ctx.fillStyle = "#070b14";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = "rgba(30, 41, 59, 0.4)";
+        ctx.lineWidth = 1;
+        const gridSize = 32;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += gridSize) {
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+        }
+        for (let y = 0; y < h; y += gridSize) {
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+        }
+        ctx.stroke();
+
+        // 2. 3D Perspective Rotation Angles
+        const yaw = Math.sin(elapsed * 0.9) * 0.16;   // ±9 degrees yaw
+        const pitch = Math.cos(elapsed * 0.7) * 0.08; // ±4.5 degrees pitch
+        const focal = 380;
+        const cx = w * 0.5;
+        const cy = h * 0.52;
+
+        // Project 3D points to 2D
+        const projected = landmarks3D.map(pt => {
+          let [x, y, z] = pt;
+          // Apply Yaw (around Y axis)
+          const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+          const x1 = x * cosY + z * sinY;
+          const z1 = -x * sinY + z * cosY;
+          // Apply Pitch (around X axis)
+          const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+          const y2 = y * cosP - z1 * sinP;
+          const z2 = y * sinP + z1 * cosP;
+
+          const scale = focal / (focal + z2 + 100);
+          return {
+            x: cx + x1 * scale * 1.35,
+            y: cy + y2 * scale * 1.35,
+            scale: scale,
+            z: z2
+          };
+        });
+
+        // 3. Draw Triangulation Edges
+        const stage = currentStageIdx;
+        const edgeColor = stage === 0 
+          ? "rgba(56, 189, 248, 0.28)" 
+          : stage === 1 
+            ? "rgba(34, 197, 94, 0.45)"
+            : stage === 2 
+              ? "rgba(168, 85, 247, 0.40)"
+              : "rgba(16, 185, 129, 0.55)";
+
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = stage === 1 ? 1.5 : 1.2;
+        ctx.beginPath();
+        edges.forEach(([i, j]) => {
+          if (projected[i] && projected[j]) {
+            ctx.moveTo(projected[i].x, projected[i].y);
+            ctx.lineTo(projected[j].x, projected[j].y);
+          }
+        });
+        ctx.stroke();
+
+        // 4. Draw Landmark Nodes
+        projected.forEach((p, idx) => {
+          const isKeyAnchor = [30, 36, 45, 48, 54, 8].includes(idx);
+          const r = (isKeyAnchor ? 3.0 : 1.8) * p.scale;
+          ctx.fillStyle = isKeyAnchor ? "#38bdf8" : (stage === 1 ? "#22c55e" : "#67e8f9");
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Stage 2: Draw occasional coordinate labels
+          if (stage === 1 && idx % 11 === 0) {
+            ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
+            ctx.font = "9px ui-monospace, monospace";
+            ctx.fillText(`P${idx}`, p.x + 4, p.y - 4);
+          }
+        });
+
+        // 5. Vertical Laser Scan Line
+        const scanY = cy + Math.sin(elapsed * 2.8) * (h * 0.38);
+        const grad = ctx.createLinearGradient(0, scanY - 30, 0, scanY + 30);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0)");
+        grad.addColorStop(0.5, "rgba(34, 197, 94, 0.45)");
+        grad.addColorStop(1, "rgba(56, 189, 248, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - 160, scanY - 25, 320, 50);
+
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.85)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 150, scanY);
+        ctx.lineTo(cx + 150, scanY);
+        ctx.stroke();
+
+        // 6. Stage-Specific Overlays
+        if (stage === 0) {
+          // Stage 1: Detection Bounding Box & Target Lock
+          const minX = Math.min(...projected.map(p => p.x)) - 18;
+          const maxX = Math.max(...projected.map(p => p.x)) + 18;
+          const minY = Math.min(...projected.map(p => p.y)) - 22;
+          const maxY = Math.max(...projected.map(p => p.y)) + 14;
+          const boxW = maxX - minX;
+          const boxH = maxY - minY;
+
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(minX, minY, boxW, boxH);
+
+          // Header tag
+          ctx.fillStyle = "#38bdf8";
+          ctx.fillRect(minX, minY - 20, 150, 20);
+          ctx.fillStyle = "#041728";
+          ctx.font = "bold 10px ui-monospace, monospace";
+          ctx.fillText("MTCNN: FACE LOCATED", minX + 6, minY - 6);
+
+          // Center crosshair
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+          ctx.beginPath();
+          ctx.moveTo(cx - 12, cy); ctx.lineTo(cx + 12, cy);
+          ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy + 12);
+          ctx.stroke();
+
+        } else if (stage === 1) {
+          // Stage 2: 68-Point Topology Alignment HUD
+          ctx.fillStyle = "rgba(34, 197, 94, 0.9)";
+          ctx.font = "11px ui-monospace, monospace";
+          ctx.fillText("FIDUCIAL 68-POINT TOPOLOGY", 20, 36);
+          ctx.fillStyle = "rgba(148, 163, 184, 0.85)";
+          ctx.font = "10px ui-monospace, monospace";
+          ctx.fillText(`YAW: ${(yaw * 57.3).toFixed(1)}°   PITCH: ${(pitch * 57.3).toFixed(1)}°`, 20, 52);
+
+        } else if (stage === 2) {
+          // Stage 3: Deep Neural Feature Extraction (512-D Tensor Stream)
+          ctx.fillStyle = "#a855f7";
+          ctx.font = "bold 11px ui-monospace, monospace";
+          ctx.fillText("ARCFACE 512-DIMENSIONAL EMBEDDING VECTOR", 20, 36);
+          
+          // Floating Tensor Vector Stream
+          ctx.fillStyle = "rgba(226, 232, 240, 0.9)";
+          ctx.font = "10px ui-monospace, monospace";
+          ctx.fillText(`f(x) ∈ ℝ⁵¹² = [ ${tensorSample.join(", ")} ... ]`, 20, 54);
+
+          // Neural ray projection lines
+          ctx.strokeStyle = "rgba(168, 85, 247, 0.5)";
+          ctx.lineWidth = 1;
+          [30, 36, 45, 51].forEach((k, idx) => {
+            const p = projected[k];
+            if (p) {
+              const targetX = w - 80;
+              const targetY = 80 + idx * 40;
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(targetX, targetY);
+              ctx.stroke();
+
+              ctx.fillStyle = "#a855f7";
+              ctx.beginPath();
+              ctx.arc(targetX, targetY, 4, 0, Math.PI*2);
+              ctx.fill();
+            }
+          });
+
+        } else if (stage === 3) {
+          // Stage 4: Cosine Metric Hypersphere Matching
+          const meterX = w - 90;
+          const meterY = cy;
+          const meterR = 48;
+
+          // Background arc
+          ctx.strokeStyle = "rgba(30, 41, 59, 0.8)";
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(meterX, meterY, meterR, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Active match arc (99.6%)
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(meterX, meterY, meterR, -Math.PI * 0.5, Math.PI * 1.48);
+          ctx.stroke();
+
+          // Text in center
+          ctx.fillStyle = "#10b981";
+          ctx.font = "bold 13px ui-monospace, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("99.6%", meterX, meterY - 2);
+          ctx.fillStyle = "#94a3b8";
+          ctx.font = "9px ui-monospace, monospace";
+          ctx.fillText("COSINE", meterX, meterY + 12);
+          ctx.textAlign = "left";
+
+          // Certified Banner
+          ctx.fillStyle = "rgba(16, 185, 129, 0.15)";
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 1;
+          ctx.fillRect(20, 24, 220, 32);
+          ctx.strokeRect(20, 24, 220, 32);
+
+          ctx.fillStyle = "#10b981";
+          ctx.font = "bold 11px ui-monospace, monospace";
+          ctx.fillText("✓ ATTENDANCE MINTED & CERTIFIED", 30, 44);
+        }
+
+        animationFrameId = requestAnimationFrame(render);
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+
+      // Stage cycle controls
+      function nextStage() {
+        setStage((currentStageIdx + 1) % stages.length);
+      }
+
+      function prevStage() {
+        setStage((currentStageIdx - 1 + stages.length) % stages.length);
+      }
+
+      function startTimer() {
+        if (stageTimer) clearInterval(stageTimer);
+        stageTimer = setInterval(nextStage, stageDurationMs);
+      }
+
+      function stopTimer() {
+        if (stageTimer) {
+          clearInterval(stageTimer);
+          stageTimer = null;
+        }
+      }
+
+      function resetAutoCycle() {
+        if (isPlaying) {
+          stopTimer();
+          startTimer();
+        }
+      }
+
+      prevBtn.addEventListener('click', () => {
+        prevStage();
+        resetAutoCycle();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        nextStage();
+        resetAutoCycle();
+      });
+
+      playPauseBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+          playPauseText.textContent = 'Pause';
+          playPauseIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+          startTimer();
+        } else {
+          playPauseText.textContent = 'Play';
+          playPauseIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+          stopTimer();
+        }
+      });
+
+      // Initialize
+      setStage(0);
+
+      // Respect reduced-motion preferences
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) {
+        isPlaying = false;
+        playPauseText.textContent = 'Play';
+        playPauseIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+      } else {
+        startTimer();
+      }
+    })();
+  </script>
+
+
 </body>
 </html>

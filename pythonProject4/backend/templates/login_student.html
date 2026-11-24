@@ -3,43 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Login</title>
+  <title>Student Portal Sign In — Vision Mark</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=8">
 </head>
 <body class="login-page">
-  <div class="logo-background"></div>
-  
-  <div class="container login-container">
+
+  <div class="login-container">
     <div class="login-card">
+      
       <div class="login-header">
-        <img src="/static/images/logo.png" alt="Logo" class="login-logo">
-        <h1>Student Login</h1>
-        <p class="subtitle">Enter your credentials to access your dashboard</p>
+        <img src="/static/images/logo.png" alt="Vision Mark Logo" class="login-logo">
+        <h1>Student Portal</h1>
+        <p class="subtitle">Enter your university credentials to view attendance</p>
       </div>
       
       <form id="loginForm" class="login-form">
         <input type="hidden" name="role" value="student">
         
         <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+          <label for="username">Enrollment Number / Username</label>
+          <input type="text" id="username" name="username" placeholder="e.g. MUR2300415" required autofocus autocomplete="username">
         </div>
         
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="Enter your password" required>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
         </div>
         
         <button type="submit" class="btn btn-primary btn-block">
-          <span>Login</span>
+          <span>Sign In to Dashboard</span>
         </button>
         
-        <p id="msg" class="message"></p>
+        <div id="msg" class="message" role="alert"></div>
       </form>
       
       <div class="login-footer">
-        <a href="/" class="back-link">← Back to Home</a>
+        <a href="/" class="back-link">
+          <span aria-hidden="true">&larr;</span> Back to home
+        </a>
       </div>
     </div>
   </div>
@@ -51,8 +53,9 @@
       const msg = document.getElementById("msg");
       
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="loading"></span> Logging in...';
+      submitBtn.innerHTML = 'Signing in...';
       msg.textContent = "";
+      msg.className = "message";
       
       const formData = new FormData(e.target);
       
@@ -65,26 +68,23 @@
           
           if (data.success) {
               msg.className = "message success";
-              msg.textContent = "✅ Login Successful! Redirecting...";
+              msg.textContent = "Authentication successful. Redirecting...";
               setTimeout(() => {
                   window.location.href = "/student/dashboard";
-              }, 1000);
+              }, 600);
           } else {
               msg.className = "message error";
-              msg.textContent = "❌ " + data.msg;
+              msg.textContent = data.msg || "Invalid credentials provided.";
               submitBtn.disabled = false;
-              submitBtn.innerHTML = '<span>Login</span>';
+              submitBtn.innerHTML = 'Sign In to Dashboard';
           }
       } catch (error) {
           msg.className = "message error";
-          msg.textContent = "❌ Connection error. Please try again.";
+          msg.textContent = "Unable to connect to verification server. Please try again.";
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Login</span>';
+          submitBtn.innerHTML = 'Sign In to Dashboard';
       }
   };
   </script>
 </body>
 </html>
-
-
-

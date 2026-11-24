@@ -21,61 +21,122 @@ from dotenv import load_dotenv
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-
-# Load .env file
-load_dotenv()
-# Import recognition class
-from backend.Recognize2 import AdvancedFaceRecognition
+import bcrypt
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # PATH SETUP
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
+WORKSPACE_ROOT = os.path.dirname(PROJECT_ROOT)
 DATASET_DIR = os.path.join(PROJECT_ROOT, "Dataset")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
-CAPTURE_DIR = os.path.join(STATIC_DIR, "captures")
+STORAGE_DIR = os.path.join(PROJECT_ROOT, "storage")
+CAPTURE_DIR = os.path.join(STORAGE_DIR, "captures")
 UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
+
+ENROLLMENT_REGEX = re.compile(r'^[A-Za-z0-9_-]{3,30}$')
+
+# Load environment configuration (.env)
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+load_dotenv(os.path.join(WORKSPACE_ROOT, ".env"))
+load_dotenv()
+
+# Import recognition class
+from backend.Recognize2 import AdvancedFaceRecognition
 
 # Create directories
 os.makedirs(CAPTURE_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(DATASET_DIR, exist_ok=True)
 
-# Session management
-sessions = {}
+# Session management (Stateless, signed HMAC-SHA256 tokens)
 SESSION_EXPIRE_SECONDS = 60 * 60 * 6  # 6 hours
+SECRET_KEY = os.getenv("SECRET_KEY", "visionmark-attendance-crypto-signed-session-secret-2026")
+session_serializer = URLSafeTimedSerializer(SECRET_KEY, salt="visionmark-session-salt")
 
-def create_session(userinfo: dict):
-    token = secrets.token_urlsafe(32)
-    sessions[token] = {
-        "userinfo": userinfo, 
-        "expires": datetime.datetime.utcnow() + datetime.timedelta(seconds=SESSION_EXPIRE_SECONDS)
-    }
-    return token
+def create_session(userinfo: dict) -> str:
+    """Generate cryptographically signed, timestamped session token"""
+    return session_serializer.dumps(userinfo)
 
-def get_session(token: Optional[str]):
+def get_session(token: Optional[str]) -> Optional[dict]:
+    """Verify cryptographic signature and expiration of session token"""
     if not token:
         return None
-    s = sessions.get(token)
-    if not s:
+    try:
+        return session_serializer.loads(token, max_age=SESSION_EXPIRE_SECONDS)
+    except (BadSignature, SignatureExpired, Exception):
         return None
-    if s["expires"] < datetime.datetime.utcnow():
-        del sessions[token]
-        return None
-    return s["userinfo"]
 
-# Database helper (Supports local MySQL & TiDB Cloud)
+# Password security: bcrypt hashing with transparent upgrade on authentication
+def hash_password(plain_password: str) -> str:
+    """Hash password using bcrypt with standard salt rounds"""
+    if not plain_password:
+        return ""
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(plain_password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_and_migrate_password(plain_password: str, stored_hash: str, user_id: int, table: str = "students") -> bool:
+    """
+    Verify password against bcrypt hash or transparently upgrade legacy plaintext to bcrypt hash.
+    """
+    if not stored_hash or not plain_password:
+        return False
+        
+    # Check if stored_hash is a bcrypt hash ($2b$, $2a$, $2y$)
+    if stored_hash.startswith(("$2b$", "$2a$", "$2y$")):
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), stored_hash.encode('utf-8'))
+        except Exception:
+            return False
+            
+    # Legacy plaintext comparison
+    if stored_hash == plain_password:
+        try:
+            new_hash = hash_password(plain_password)
+            conn = get_db_conn()
+            cur = conn.cursor()
+            cur.execute(f"UPDATE {table} SET password = %s WHERE id = %s", (new_hash, user_id))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"[AUTH MIGRATION WARNING] Failed to upgrade password hash for {table} id={user_id}: {e}")
+        return True
+        
+    return False
+
+# Database connection helper (Reads strictly from environment, zero hardcoded secrets)
 def get_db_conn():
-    port = int(os.getenv("DB_PORT", 4000 if "tidb" in (os.getenv("DB_HOST") or "").lower() else 3306))
+    host = os.getenv("DB_HOST")
+    if not host:
+        # Fallback to local default if no remote host defined
+        host = "localhost"
+    port = int(os.getenv("DB_PORT", 4000 if "tidb" in host.lower() else 3306))
+    user = os.getenv("DB_USER", "root")
+    password = os.getenv("DB_PASSWORD", "")
+    database = os.getenv("DB_NAME", "face_detection")
     ssl_disabled = (os.getenv("DB_SSL_DISABLED") or "False").lower() in ("true", "1")
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "gateway01.ap-northeast-1.prod.aws.tidbcloud.com"),
-        port=port,
-        user=os.getenv("DB_USER", "3QtZDLSqiksoXFK.root"),
-        password=os.getenv("DB_PASSWORD", "Co5onzrOD2uxx23U"),
-        database=os.getenv("DB_NAME", "face_detection"),
-        ssl_disabled=ssl_disabled
-    )
+    
+    last_err = None
+    for attempt in range(3):
+        try:
+            return mysql.connector.connect(
+                host=host,
+                port=port,
+                user=user,
+                password=password,
+                database=database,
+                ssl_disabled=ssl_disabled,
+                connection_timeout=15
+            )
+        except Exception as e:
+            last_err = e
+            time.sleep(0.5)
+    raise last_err
 
 # Subject to table mapping (B.Tech CSE-7th Sem Mewar University)
 SUBJECT_TABLE_MAP = {
@@ -105,13 +166,76 @@ CANONICAL_SUBJECTS = [
     ("Major Project", "majorproject_attendance")
 ]
 
-# Global recognition object
+# Helper: Group attendance records into distinct class sessions
+def group_records_into_sessions(records: list, time_window_minutes: int = 40):
+    """
+    Groups attendance records on the same calendar day into distinct sessions.
+    If multiple classes occur on the same day (> time_window_minutes apart),
+    they are recognized as separate sessions, ensuring daily and overall totals
+    increment properly for every class held.
+    Returns:
+      sessions: list of session dicts { 'session_id', 'date', 'start_dt', 'end_dt', 'display', 'records' }
+      record_session_map: dict mapping record['id'] -> session_id
+    """
+    if not records:
+        return [], {}
+        
+    by_date = {}
+    for r in records:
+        dt = r['Attendance_DateTime']
+        d = dt.date()
+        by_date.setdefault(d, []).append(r)
+        
+    sessions = []
+    record_session_map = {}
+    
+    for d, recs in sorted(by_date.items()):
+        sorted_recs = sorted(recs, key=lambda x: x['Attendance_DateTime'])
+        current_session = None
+        
+        for r in sorted_recs:
+            dt = r['Attendance_DateTime']
+            if current_session is None:
+                current_session = {
+                    'session_id': f"{d.strftime('%Y-%m-%d')}_s1",
+                    'date': d,
+                    'start_dt': dt,
+                    'end_dt': dt,
+                    'display': f"{d.strftime('%d-%b-%Y')} ({dt.strftime('%I:%M %p')})",
+                    'records': [r]
+                }
+                record_session_map[r['id']] = current_session['session_id']
+            else:
+                gap_minutes = (dt - current_session['start_dt']).total_seconds() / 60.0
+                if gap_minutes <= time_window_minutes:
+                    current_session['end_dt'] = dt
+                    current_session['records'].append(r)
+                    record_session_map[r['id']] = current_session['session_id']
+                else:
+                    sessions.append(current_session)
+                    sess_num = len([s for s in sessions if s['date'] == d]) + 1
+                    current_session = {
+                        'session_id': f"{d.strftime('%Y-%m-%d')}_s{sess_num}",
+                        'date': d,
+                        'start_dt': dt,
+                        'end_dt': dt,
+                        'display': f"{d.strftime('%d-%b-%Y')} ({dt.strftime('%I:%M %p')})",
+                        'records': [r]
+                    }
+                    record_session_map[r['id']] = current_session['session_id']
+        if current_session:
+            sessions.append(current_session)
+            
+    return sessions, record_session_map
+
+# Global recognition object & cooldown trackers
 recog = None
 recog_thread = None
 current_recognitions = []  # Store recent recognitions
+student_detection_cooldown = {}  # 60s cooldown per student: enrollment_no -> float(timestamp)
 active_camera_teacher = None  # Dict of teacher userinfo who started the camera
 
-# Recognition callback with Timetable Enforcement & Testing Mode
+# Recognition callback with Timetable Enforcement, Testing Mode & 60s Student Cooldown
 def recognition_callback(match, similarity, bbox, img_bytes):
     """
     Called when face is recognized during webcam stream.
@@ -122,8 +246,19 @@ def recognition_callback(match, similarity, bbox, img_bytes):
     try:
         enrollment_no = match.get("enrollment_no")
         name = match.get("name")
-        
+        if not enrollment_no:
+            return
+            
         now = datetime.datetime.now()
+        now_ts = now.timestamp()
+        
+        # 1-MINUTE COOLDOWN: Suppress repeat detections of the same student for 60 seconds
+        last_seen = student_detection_cooldown.get(enrollment_no, 0)
+        if now_ts - last_seen < 60:
+            # Within 1 minute cooldown — suppress repeat detection display and processing
+            return
+        student_detection_cooldown[enrollment_no] = now_ts
+        
         current_time = now.time()
         current_day = now.strftime("%A")
         exact_time_str = now.strftime("%I:%M:%S %p")
@@ -415,6 +550,9 @@ async def lifespan(app: FastAPI):
     recog = None
 
 app = FastAPI(lifespan=lifespan)
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -506,15 +644,15 @@ def teacher_dashboard(request: Request, session: Optional[str] = Cookie(None)):
 # ==================== API ENDPOINTS ====================
 
 @app.post("/api/login")
-def api_login(role: str = Form(...), username: str = Form(...), password: str = Form(...)):
+@limiter.limit("5/minute")
+def api_login(request: Request, role: str = Form(...), username: str = Form(...), password: str = Form(...)):
+    role = role.strip().lower()
+    username = username.strip()
+    table = "students" if role == "student" else "teachers"
+    
     conn = get_db_conn()
     cur = conn.cursor(dictionary=True)
-    
-    if role == "student":
-        cur.execute("SELECT * FROM students WHERE username=%s", (username,))
-    else:
-        cur.execute("SELECT * FROM teachers WHERE username=%s", (username,))
-    
+    cur.execute(f"SELECT * FROM {table} WHERE username=%s", (username,))
     row = cur.fetchone()
     cur.close()
     conn.close()
@@ -522,7 +660,8 @@ def api_login(role: str = Form(...), username: str = Form(...), password: str = 
     if not row:
         return JSONResponse({"success": False, "msg": "User not found"})
     
-    if row.get("password") != password:
+    stored_pw = row.get("password") or ""
+    if not verify_and_migrate_password(password, stored_pw, row["id"], table=table):
         return JSONResponse({"success": False, "msg": "Invalid credentials"})
     
     userinfo = {
@@ -541,8 +680,6 @@ def api_login(role: str = Form(...), username: str = Form(...), password: str = 
 
 @app.post("/api/logout")
 def api_logout(session: Optional[str] = Cookie(None)):
-    if session and session in sessions:
-        del sessions[session]
     resp = JSONResponse({"success": True})
     resp.delete_cookie("session")
     return resp
@@ -676,9 +813,24 @@ def api_teacher_class_status(session: Optional[str] = Cookie(None)):
         }
 
 @app.get("/api/student/attendance/{enrollment_no}")
-def api_student_attendance(enrollment_no: str):
-    """Get student attendance across all canonical subjects without duplicate aliases"""
+def api_student_attendance(enrollment_no: str, session: Optional[str] = Cookie(None)):
+    """Get student attendance across all canonical subjects (SEC-01 Protected)"""
+    user = get_session(session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
     enrollment_no = enrollment_no.strip().upper()
+    if not ENROLLMENT_REGEX.match(enrollment_no):
+        raise HTTPException(status_code=400, detail="Invalid enrollment number format")
+        
+    # Student role: can only view own attendance records
+    if user.get("role") == "student":
+        user_enroll = (user.get("enrollment_no") or "").upper()
+        if user_enroll != enrollment_no:
+            raise HTTPException(status_code=403, detail="Forbidden: You are only authorized to access your own attendance records")
+    elif user.get("role") != "teacher":
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
     try:
         conn = get_db_conn()
         cur = conn.cursor(dictionary=True)
@@ -1075,19 +1227,31 @@ def api_teacher_analytics(
         elif period == "monthly":
             where_clause = "WHERE Attendance_DateTime >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
             
-        # 1. Total distinct sessions/dates for this period
-        cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} {where_clause} ORDER BY att_date ASC")
-        all_dates = [r['att_date'] for r in cur.fetchall()]
+        # 1. Fetch attendance records for this subject within the period
+        cur.execute(f"""
+            SELECT id, Enrollment_No, Attendance_DateTime, Status 
+            FROM {table_name} {where_clause} 
+            ORDER BY Attendance_DateTime ASC
+        """)
+        records = cur.fetchall()
         
         # If daily has 0 records today, fallback to latest date so charts don't render completely blank
-        if not all_dates and period == "daily":
-            cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY att_date DESC LIMIT 1")
+        if not records and period == "daily":
+            cur.execute(f"SELECT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY Attendance_DateTime DESC LIMIT 1")
             latest_row = cur.fetchone()
             if latest_row:
-                all_dates = [latest_row['att_date']]
-                where_clause = f"WHERE DATE(Attendance_DateTime) = '{latest_row['att_date']}'"
+                fallback_d = latest_row['att_date']
+                where_clause = f"WHERE DATE(Attendance_DateTime) = '{fallback_d}'"
+                cur.execute(f"""
+                    SELECT id, Enrollment_No, Attendance_DateTime, Status 
+                    FROM {table_name} {where_clause} 
+                    ORDER BY Attendance_DateTime ASC
+                """)
+                records = cur.fetchall()
                 
-        total_sessions = len(all_dates)
+        # Group records into true distinct sessions (supports multiple lectures on same day!)
+        sessions, record_session_map = group_records_into_sessions(records)
+        total_sessions = len(sessions)
         
         # 2. All registered students
         cur.execute("""
@@ -1099,21 +1263,16 @@ def api_teacher_analytics(
         students = cur.fetchall()
         total_students = len(students)
         
-        # 3. Attendance records for this subject within the period
-        cur.execute(f"SELECT Enrollment_No, DATE(Attendance_DateTime) as att_date, Status, Attendance_DateTime FROM {table_name} {where_clause}")
-        records = cur.fetchall()
-        
-        # Aggregate student performance
+        # 3. Aggregate student performance across all distinct sessions
         student_stats = []
         defaulters_count = 0
         total_pct_sum = 0
         
         for s in students:
             enr = s['Enrollment_No']
-            s_records = [r for r in records if r['Enrollment_No'] == enr]
-            present_dates = set(r['att_date'] for r in s_records if r['Status'] == 'Present')
-            late_dates = set(r['att_date'] for r in s_records if r['Status'] == 'Late')
-            attended_count = len(present_dates.union(late_dates))
+            s_records = [r for r in records if r['Enrollment_No'] == enr and r['Status'] in ('Present', 'Late')]
+            attended_session_ids = set(record_session_map.get(r['id']) for r in s_records if r['id'] in record_session_map)
+            attended_count = len(attended_session_ids)
             
             pct = round((attended_count / total_sessions * 100), 1) if total_sessions > 0 else 0
             status = "Eligible" if pct >= 75 else "Shortage"
@@ -1135,29 +1294,32 @@ def api_teacher_analytics(
         student_stats.sort(key=lambda x: x["percentage"], reverse=True)
         avg_attendance_pct = round(total_pct_sum / total_students, 1) if total_students > 0 else 0
         
-        # 4. Daily attendance trend
+        # 4. Session-aware attendance trend
         daily_trend = []
-        for d in all_dates:
-            present_in_day = len(set(r['Enrollment_No'] for r in records if r['att_date'] == d and r['Status'] in ('Present', 'Late')))
-            absent_in_day = max(0, total_students - present_in_day)
+        for sess in sessions:
+            sess_recs = sess['records']
+            pres_in_sess = len(set(r['Enrollment_No'] for r in sess_recs if r['Status'] in ('Present', 'Late')))
+            abs_in_sess = max(0, total_students - pres_in_sess)
+            has_multiple_on_date = len([s for s in sessions if s['date'] == sess['date']]) > 1
+            disp_date = f"{sess['date'].strftime('%d %b')} ({sess['start_dt'].strftime('%I:%M %p')})" if has_multiple_on_date else sess['date'].strftime("%d %b")
             daily_trend.append({
-                "date": d.strftime("%Y-%m-%d"),
-                "display_date": d.strftime("%d %b"),
-                "day_name": d.strftime("%A"),
-                "present": present_in_day,
-                "absent": absent_in_day,
-                "attendance_rate": round((present_in_day / total_students * 100), 1) if total_students > 0 else 0
+                "date": sess['date'].strftime("%Y-%m-%d"),
+                "display_date": disp_date,
+                "day_name": sess['date'].strftime("%A"),
+                "present": pres_in_sess,
+                "absent": abs_in_sess,
+                "attendance_rate": round((pres_in_sess / total_students * 100), 1) if total_students > 0 else 0
             })
             
-        # 5. Day-of-Week Bunk / Absenteeism Analysis
+        # 5. Day-of-Week Bunk / Absenteeism Analysis across all sessions
         day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         day_agg = {d: {"present_sum": 0, "possible_sum": 0, "sessions": 0} for d in day_names}
         
-        for d in all_dates:
-            d_name = d.strftime("%A")
+        for sess in sessions:
+            d_name = sess['date'].strftime("%A")
             if d_name in day_agg:
                 day_agg[d_name]["sessions"] += 1
-                pres_count = len(set(r['Enrollment_No'] for r in records if r['att_date'] == d and r['Status'] in ('Present', 'Late')))
+                pres_count = len(set(r['Enrollment_No'] for r in sess['records'] if r['Status'] in ('Present', 'Late')))
                 day_agg[d_name]["present_sum"] += pres_count
                 day_agg[d_name]["possible_sum"] += total_students
                 
@@ -1247,34 +1409,46 @@ def api_teacher_export_report(
             where_clause = "WHERE Attendance_DateTime >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
             period_title = "MONTHLY REPORT (LAST 30 DAYS)"
             
-        cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} {where_clause} ORDER BY att_date ASC")
-        dates_rows = cur.fetchall()
+        # Fetch attendance records within period
+        cur.execute(f"""
+            SELECT id, Enrollment_No, Attendance_DateTime, Status 
+            FROM {table_name} {where_clause} 
+            ORDER BY Attendance_DateTime ASC
+        """)
+        att_records = cur.fetchall()
         
         # If daily has no records today, fallback to latest date so user receives a real populated sheet
-        if not dates_rows and period == "daily":
-            cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY att_date DESC LIMIT 1")
-            dates_rows = cur.fetchall()
-            if dates_rows:
-                fallback_date = dates_rows[0]['att_date']
+        if not att_records and period == "daily":
+            cur.execute(f"SELECT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY Attendance_DateTime DESC LIMIT 1")
+            latest_row = cur.fetchone()
+            if latest_row:
+                fallback_date = latest_row['att_date']
                 where_clause = f"WHERE DATE(Attendance_DateTime) = '{fallback_date}'"
                 period_title = f"DAILY REPORT ({fallback_date.strftime('%d-%b-%Y')})"
+                cur.execute(f"""
+                    SELECT id, Enrollment_No, Attendance_DateTime, Status 
+                    FROM {table_name} {where_clause} 
+                    ORDER BY Attendance_DateTime ASC
+                """)
+                att_records = cur.fetchall()
                 
-        # If still empty, fetch all dates
-        if not dates_rows:
-            cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY att_date ASC")
-            dates_rows = cur.fetchall()
+        # If still empty, fetch all records
+        if not att_records:
+            cur.execute(f"""
+                SELECT id, Enrollment_No, Attendance_DateTime, Status 
+                FROM {table_name} 
+                ORDER BY Attendance_DateTime ASC
+            """)
+            att_records = cur.fetchall()
             period_title = "ALL SESSIONS REGISTER"
             where_clause = ""
             
-        distinct_dates = [r['att_date'] for r in dates_rows]
+        # Group into true distinct sessions (supports multiple lectures on same day!)
+        sessions, rmap = group_records_into_sessions(att_records)
         
         # Fetch students
         cur.execute("SELECT Enrollment_No, Name FROM student_detail ORDER BY Enrollment_No ASC")
         students = cur.fetchall()
-        
-        # Fetch attendance records
-        cur.execute(f"SELECT Enrollment_No, DATE(Attendance_DateTime) as att_date, Status FROM {table_name} {where_clause}")
-        att_records = cur.fetchall()
         
         cur.close()
         conn.close()
@@ -1303,7 +1477,7 @@ def api_teacher_export_report(
             bottom=Side(style='thin', color='B0BEC5')
         )
         
-        total_cols = max(7, 3 + len(distinct_dates) + 4)
+        total_cols = max(7, 3 + len(sessions) + 4)
         end_col_letter = get_column_letter(total_cols)
         
         # Title Banner (Rows 1-3)
@@ -1322,7 +1496,7 @@ def api_teacher_export_report(
         ws.row_dimensions[2].height = 24
         
         ws.merge_cells(f"A3:{end_col_letter}3")
-        ws["A3"] = f"Report Range: {period_title}   |   Generated On: {now.strftime('%d-%b-%Y %I:%M %p')}"
+        ws["A3"] = f"Report Range: {period_title}   |   Generated On: {now.strftime('%d-%b-%Y %I:%M %p (IST)')}"
         ws["A3"].font = Font(name="Segoe UI", size=10, italic=True, color="333333")
         ws["A3"].fill = light_meta_fill
         ws["A3"].alignment = Alignment(horizontal="center", vertical="center")
@@ -1331,10 +1505,11 @@ def api_teacher_export_report(
         # Separator Row 4
         ws.row_dimensions[4].height = 8
         
-        # Table Header (Row 5)
+        # Table Header (Row 5) with Date and Time
         headers = ["S.No", "Enrollment No", "Student Name"]
-        for d in distinct_dates:
-            headers.append(d.strftime("%d/%m"))
+        for sess in sessions:
+            time_part = sess['start_dt'].strftime('%I:%M %p')
+            headers.append(f"{sess['date'].strftime('%d/%m')}\n{time_part}")
         headers.extend(["Present (P)", "Total Held", "Attendance %", "Status (<75%)"])
         
         for col_idx, h_text in enumerate(headers, 1):
@@ -1343,11 +1518,11 @@ def api_teacher_export_report(
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = thin_border
-        ws.row_dimensions[5].height = 28
+        ws.row_dimensions[5].height = 30
         
         # Data Rows (Row 6 onwards)
         current_row = 6
-        date_present_counts = {d: 0 for d in distinct_dates}
+        sess_present_counts = {s['session_id']: 0 for s in sessions}
         
         for idx, student in enumerate(students, 1):
             enr = student["Enrollment_No"]
@@ -1366,34 +1541,34 @@ def api_teacher_export_report(
             c3.font = Font(name="Segoe UI", size=10, bold=True)
             
             student_present_count = 0
-            for d_idx, d in enumerate(distinct_dates, 4):
-                records_on_date = [r for r in att_records if r["Enrollment_No"] == enr and r["att_date"] == d]
-                cell = ws.cell(row=current_row, column=d_idx)
+            for s_idx, sess in enumerate(sessions, 4):
+                sess_records = [r for r in sess['records'] if r["Enrollment_No"] == enr]
+                cell = ws.cell(row=current_row, column=s_idx)
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.border = thin_border
                 
-                if any(r["Status"] == "Present" for r in records_on_date):
+                if any(r["Status"] == "Present" for r in sess_records):
                     cell.value = "P"
                     cell.fill = p_fill
                     cell.font = Font(name="Segoe UI", size=10, bold=True, color="155724")
                     student_present_count += 1
-                    date_present_counts[d] += 1
-                elif any(r["Status"] == "Late" for r in records_on_date):
+                    sess_present_counts[sess['session_id']] += 1
+                elif any(r["Status"] == "Late" for r in sess_records):
                     cell.value = "L"
                     cell.fill = l_fill
                     cell.font = Font(name="Segoe UI", size=10, bold=True, color="856404")
                     student_present_count += 1
-                    date_present_counts[d] += 1
+                    sess_present_counts[sess['session_id']] += 1
                 else:
                     cell.value = "A"
                     cell.fill = a_fill
                     cell.font = Font(name="Segoe UI", size=10, bold=True, color="721C24")
                     
-            total_sessions = len(distinct_dates)
+            total_sessions = len(sessions)
             pct = round((student_present_count / total_sessions * 100), 1) if total_sessions > 0 else 0
             is_eligible = pct >= 75
             
-            col_p = 4 + len(distinct_dates)
+            col_p = 4 + len(sessions)
             cP = ws.cell(row=current_row, column=col_p, value=student_present_count)
             cT = ws.cell(row=current_row, column=col_p + 1, value=total_sessions)
             cRate = ws.cell(row=current_row, column=col_p + 2, value=f"{pct}%")
@@ -1427,14 +1602,14 @@ def api_teacher_export_report(
         ws.cell(row=current_row, column=2).border = thin_border
         ws.cell(row=current_row, column=3).border = thin_border
         
-        for d_idx, d in enumerate(distinct_dates, 4):
-            c = ws.cell(row=current_row, column=d_idx, value=date_present_counts[d])
+        for s_idx, sess in enumerate(sessions, 4):
+            c = ws.cell(row=current_row, column=s_idx, value=sess_present_counts[sess['session_id']])
             c.font = Font(name="Segoe UI", size=10, bold=True, color="1B365D")
             c.fill = summary_fill
             c.alignment = Alignment(horizontal="center", vertical="center")
             c.border = thin_border
             
-        col_p = 4 + len(distinct_dates)
+        col_p = 4 + len(sessions)
         for end_idx in range(col_p, total_cols + 1):
             c = ws.cell(row=current_row, column=end_idx, value="—")
             c.fill = summary_fill
@@ -1446,12 +1621,13 @@ def api_teacher_export_report(
         ws.column_dimensions['A'].width = 8
         ws.column_dimensions['B'].width = 18
         ws.column_dimensions['C'].width = 24
-        for d_idx in range(4, 4 + len(distinct_dates)):
-            ws.column_dimensions[get_column_letter(d_idx)].width = 11
-        ws.column_dimensions[get_column_letter(4 + len(distinct_dates))].width = 14
-        ws.column_dimensions[get_column_letter(5 + len(distinct_dates))].width = 14
-        ws.column_dimensions[get_column_letter(6 + len(distinct_dates))].width = 15
-        ws.column_dimensions[get_column_letter(7 + len(distinct_dates))].width = 20
+        for s_idx in range(4, 4 + len(sessions)):
+            col_letter = get_column_letter(s_idx)
+            ws.column_dimensions[col_letter].width = 14
+        ws.column_dimensions[get_column_letter(4 + len(sessions))].width = 14
+        ws.column_dimensions[get_column_letter(5 + len(sessions))].width = 14
+        ws.column_dimensions[get_column_letter(6 + len(sessions))].width = 15
+        ws.column_dimensions[get_column_letter(7 + len(sessions))].width = 20
         
         # Stream response
         output = io.BytesIO()
@@ -1509,37 +1685,36 @@ def api_teacher_export_student_report(
         parent_phone = student_info.get('parent_phone') if student_info else ''
         student_class = student_info.get('class') or 'B.Tech CS / All Batches'
         
-        # 2. Fetch all distinct lecture dates conducted for this subject
-        cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {table_name} ORDER BY att_date ASC")
-        all_dates = [r['att_date'] for r in cur.fetchall()]
-        total_sessions = len(all_dates)
-        
-        # 3. Fetch all attendance entries for this specific student in this subject
+        # 2. Fetch all attendance entries conducted for this subject
         cur.execute(f"""
             SELECT id, Enrollment_No, Attendance_DateTime, Status, recognized_by, confidence, image_path, remarks 
             FROM {table_name} 
-            WHERE Enrollment_No = %s 
             ORDER BY Attendance_DateTime ASC
-        """, (enrollment_no,))
-        student_records = cur.fetchall()
+        """)
+        all_subject_records = cur.fetchall()
         
-        cur.close()
-        conn.close()
+        # Group into true distinct sessions (supports multiple lectures on same day!)
+        sessions, rmap = group_records_into_sessions(all_subject_records)
+        total_sessions = len(sessions)
         
-        # Group records by date (first entry on that date)
-        date_records_map = {}
+        # Map student's records to session_id
+        student_records = [r for r in all_subject_records if r['Enrollment_No'] == enrollment_no]
+        student_sess_map = {}
         for r in student_records:
-            d = r['Attendance_DateTime'].date()
-            if d not in date_records_map:
-                date_records_map[d] = r
+            sess_id = rmap.get(r['id'])
+            if sess_id and sess_id not in student_sess_map:
+                student_sess_map[sess_id] = r
                 
-        present_count = sum(1 for d in all_dates if d in date_records_map and date_records_map[d]['Status'] == 'Present')
-        late_count = sum(1 for d in all_dates if d in date_records_map and date_records_map[d]['Status'] == 'Late')
+        present_count = sum(1 for s in sessions if s['session_id'] in student_sess_map and student_sess_map[s['session_id']]['Status'] == 'Present')
+        late_count = sum(1 for s in sessions if s['session_id'] in student_sess_map and student_sess_map[s['session_id']]['Status'] == 'Late')
         attended_count = present_count + late_count
         absent_count = max(0, total_sessions - attended_count)
         pct = round((attended_count / total_sessions * 100), 1) if total_sessions > 0 else 0
         is_eligible = pct >= 75
         eligibility = "ELIGIBLE (Passing Criteria ≥ 75%)" if is_eligible else "SHORTAGE DEFAULTER (Below 75%)"
+        
+        cur.close()
+        conn.close()
         
         # Build Excel Workbook using openpyxl
         wb = openpyxl.Workbook()
@@ -1571,15 +1746,15 @@ def api_teacher_export_student_report(
         )
         
         # Title Banner (Row 1-2)
-        ws.merge_cells("A1:H1")
+        ws.merge_cells("A1:I1")
         ws["A1"] = "🎓 VISION MARK — INDIVIDUAL STUDENT ATTENDANCE & IN-TIME AUDIT REPORT"
         ws["A1"].font = Font(name="Segoe UI", size=13, bold=True, color="FFFFFF")
         ws["A1"].fill = navy_dark
         ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
         ws.row_dimensions[1].height = 36
         
-        ws.merge_cells("A2:H2")
-        ws["A2"] = f"Subject: {teacher_subject}   |   Faculty: {user.get('name', user.get('username'))}   |   Report Date: {now.strftime('%d-%b-%Y %I:%M %p')}"
+        ws.merge_cells("A2:I2")
+        ws["A2"] = f"Subject: {teacher_subject}   |   Faculty: {user.get('name', user.get('username'))}   |   Report Date: {now.strftime('%d-%b-%Y %I:%M %p (IST)')}"
         ws["A2"].font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
         ws["A2"].fill = navy_blue
         ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
@@ -1596,6 +1771,7 @@ def api_teacher_export_student_report(
         ws["F4"] = student_class
         ws["G4"] = "Parent Mobile:"
         ws["H4"] = parent_phone if parent_phone else "N/A"
+        ws["I4"] = ""
         
         # Row 5: Attendance Summary Metrics
         ws["A5"] = "Total Lectures:"
@@ -1606,10 +1782,11 @@ def api_teacher_export_student_report(
         ws["F5"] = absent_count
         ws["G5"] = "Attendance Rate:"
         ws["H5"] = f"{pct}%"
+        ws["I5"] = ""
         
         for r_idx in range(4, 6):
             ws.row_dimensions[r_idx].height = 22
-            for col_idx in range(1, 9):
+            for col_idx in range(1, 10):
                 cell = ws.cell(row=r_idx, column=col_idx)
                 cell.border = thin_border
                 if col_idx % 2 == 1:
@@ -1621,14 +1798,14 @@ def api_teacher_export_student_report(
                     cell.alignment = Alignment(horizontal="left", vertical="center")
         
         # Row 6: University Criteria Status Banner
-        ws.merge_cells("A6:H6")
+        ws.merge_cells("A6:I6")
         status_banner_text = f"ACADEMIC ELIGIBILITY STATUS:  {eligibility}  (Attended {attended_count} of {total_sessions} classes — {pct}%)"
         ws["A6"] = status_banner_text
         ws["A6"].alignment = Alignment(horizontal="center", vertical="center")
         ws["A6"].font = Font(name="Segoe UI", size=11, bold=True, color="065F46" if is_eligible else "991B1B")
         ws["A6"].fill = green_fill if is_eligible else red_fill
         ws.row_dimensions[6].height = 26
-        for col_idx in range(1, 9):
+        for col_idx in range(1, 10):
             ws.cell(row=6, column=col_idx).border = thin_border
             
         ws.row_dimensions[7].height = 10
@@ -1638,7 +1815,8 @@ def api_teacher_export_student_report(
             "S.No",
             "Lecture Date",
             "Day of Week",
-            "Exact Entry Time (In-Time)",
+            "Session Slot",
+            "Student In-Time (IST)",
             "Attendance Status",
             "Biometric Verification Method",
             "AI Confidence %",
@@ -1655,12 +1833,13 @@ def api_teacher_export_student_report(
             
         # Table Rows (Row 9 onwards)
         row_idx = 9
-        for s_idx, d in enumerate(all_dates, 1):
+        for s_idx, sess in enumerate(sessions, 1):
             ws.row_dimensions[row_idx].height = 22
-            rec = date_records_map.get(d)
+            rec = student_sess_map.get(sess['session_id'])
             
-            day_name = d.strftime("%A")
-            date_str = d.strftime("%d-%b-%Y")
+            day_name = sess['date'].strftime("%A")
+            date_str = sess['date'].strftime("%d-%b-%Y")
+            slot_time = sess['start_dt'].strftime("%I:%M %p")
             
             if rec:
                 status_str = rec['Status']
@@ -1680,13 +1859,14 @@ def api_teacher_export_student_report(
             ws.cell(row=row_idx, column=1, value=s_idx).alignment = Alignment(horizontal="center", vertical="center")
             ws.cell(row=row_idx, column=2, value=date_str).alignment = Alignment(horizontal="center", vertical="center")
             ws.cell(row=row_idx, column=3, value=day_name).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row=row_idx, column=4, value=slot_time).alignment = Alignment(horizontal="center", vertical="center")
             
-            time_cell = ws.cell(row=row_idx, column=4, value=exact_time)
+            time_cell = ws.cell(row=row_idx, column=5, value=exact_time)
             time_cell.alignment = Alignment(horizontal="center", vertical="center")
             if exact_time != "—":
                 time_cell.font = Font(name="Segoe UI", size=10, bold=True, color="1B365D")
                 
-            status_cell = ws.cell(row=row_idx, column=5, value=status_str)
+            status_cell = ws.cell(row=row_idx, column=6, value=status_str)
             status_cell.alignment = Alignment(horizontal="center", vertical="center")
             if status_str == 'Present':
                 status_cell.fill = green_fill
@@ -1698,11 +1878,11 @@ def api_teacher_export_student_report(
                 status_cell.fill = red_fill
                 status_cell.font = red_font
                 
-            ws.cell(row=row_idx, column=6, value=method).alignment = Alignment(horizontal="left", vertical="center")
-            ws.cell(row=row_idx, column=7, value=conf_str).alignment = Alignment(horizontal="center", vertical="center")
-            ws.cell(row=row_idx, column=8, value=remarks).alignment = Alignment(horizontal="left", vertical="center")
+            ws.cell(row=row_idx, column=7, value=method).alignment = Alignment(horizontal="left", vertical="center")
+            ws.cell(row=row_idx, column=8, value=conf_str).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row=row_idx, column=9, value=remarks).alignment = Alignment(horizontal="left", vertical="center")
             
-            for c in range(1, 9):
+            for c in range(1, 10):
                 ws.cell(row=row_idx, column=c).border = thin_border
                 
             row_idx += 1
@@ -1781,6 +1961,9 @@ async def api_teacher_add_student(
     parent_phone = parent_phone.strip() if parent_phone else None
     update_mode = (update_mode or "new").strip().lower()
     
+    if not ENROLLMENT_REGEX.match(enrollment_no):
+        return {"success": False, "msg": "❌ Invalid Enrollment Number format. Must be alphanumeric (e.g. MUR2100415)."}
+
     if not enrollment_no or not username or not password or not name:
         return {"success": False, "msg": "All fields (Enrollment No, Name, Username, Password) are required!"}
     
@@ -1796,7 +1979,8 @@ async def api_teacher_add_student(
             # ==========================================================
             # EXISTING STUDENT WORKFLOW: VERIFY CREDENTIALS FIRST
             # ==========================================================
-            if existing_student['username'] != username or existing_student['password'] != password:
+            stored_pw = existing_student.get('password') or ""
+            if existing_student['username'] != username or not verify_and_migrate_password(password, stored_pw, existing_student['id'], 'students'):
                 cur.close()
                 conn.close()
                 return {
@@ -2030,11 +2214,12 @@ async def api_teacher_add_student(
         else:
             cur.execute("UPDATE student_detail SET parent_phone = %s WHERE Enrollment_No = %s", (parent_phone, enrollment_no))
             
-        # Insert into students table
+        # Insert into students table with secure bcrypt hashed password
+        hashed_pw = hash_password(password)
         cur.execute("""
             INSERT INTO students (username, password, name, enrollment_no, class, parent_phone)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, (username, password, name, enrollment_no, class_name, parent_phone))
+        """, (username, hashed_pw, name, enrollment_no, class_name, parent_phone))
         
         conn.commit()
         cur.close()
@@ -2100,8 +2285,12 @@ async def api_teacher_add_student(
         return {"success": False, "msg": f"Database error: {str(e)}"}
 
 @app.get("/api/video_feed")
-def api_video_feed():
-    """Live MJPEG video stream from server webcam to browser"""
+def api_video_feed(session: Optional[str] = Cookie(None)):
+    """Live MJPEG video stream from server webcam to browser (SEC-05 Protected)"""
+    user = get_session(session)
+    if not user or user.get("role") != "teacher":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
     def frame_generator():
         global recog
         while recog and getattr(recog, 'running', False):
@@ -2115,14 +2304,133 @@ def api_video_feed():
     return StreamingResponse(frame_generator(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 @app.get("/api/webcam_status")
-def api_webcam_status():
+def api_webcam_status(session: Optional[str] = Cookie(None)):
+    """Check running status of camera (SEC-05 Protected)"""
+    user = get_session(session)
+    if not user or user.get("role") != "teacher":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
     global recog
     is_running = bool(recog and getattr(recog, 'running', False))
     return {"is_running": is_running}
 
+@app.get("/api/captures/{filename}")
+def api_get_capture(filename: str, session: Optional[str] = Cookie(None)):
+    """Securely serve biometric surveillance captures with role-based authorization (SEC-04 Protected)"""
+    user = get_session(session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    clean_filename = os.path.basename(filename)
+    if clean_filename != filename or ".." in filename or not clean_filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        raise HTTPException(status_code=400, detail="Invalid capture filename")
+        
+    if user.get("role") == "student":
+        stud_enroll = (user.get("enrollment_no") or "").upper()
+        if not stud_enroll or not clean_filename.upper().startswith(stud_enroll):
+            raise HTTPException(status_code=403, detail="Forbidden: You are only authorized to view your own attendance captures")
+    elif user.get("role") != "teacher":
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    file_path = os.path.join(CAPTURE_DIR, clean_filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Capture image not found")
+        
+    return FileResponse(file_path, media_type="image/jpeg")
+
+@app.post("/api/recognize_frame")
+async def api_recognize_frame(request: Request, session: Optional[str] = Cookie(None)):
+    """
+    Process browser-streamed camera frames from faculty client (laptop / mobile phone webcam).
+    Enables zero-latency remote computer vision on cloud deployments without requiring physical server USB cameras.
+    """
+    user = get_session(session)
+    if not user or user.get("role") != "teacher":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    global recog, active_camera_teacher
+    active_camera_teacher = user
+    
+    if not recog:
+        return {"success": False, "msg": "Face recognition engine not initialized"}
+        
+    try:
+        body = await request.json()
+    except Exception:
+        return {"success": False, "msg": "Invalid JSON request body"}
+        
+    image_data = body.get("image")
+    if not image_data:
+        return {"success": False, "msg": "Missing image frame data"}
+        
+    if "," in image_data:
+        image_data = image_data.split(",", 1)[1]
+        
+    try:
+        raw_bytes = base64.b64decode(image_data)
+        np_arr = np.frombuffer(raw_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    except Exception as e:
+        return {"success": False, "msg": f"Failed to decode frame: {str(e)}"}
+        
+    if frame is None:
+        return {"success": False, "msg": "Invalid image format"}
+        
+    try:
+        # Detect faces adaptively using multi-distance ArcFace model
+        _, faces = recog.process_frame(frame)
+        
+        detections = []
+        for face in faces:
+            bbox = face.get("bbox", [0, 0, 0, 0])
+            similarity = face.get("similarity")
+            match = face.get("match")
+            threshold = recog.get_recognition_threshold(bbox)
+            is_matched = bool(match and similarity and similarity >= threshold)
+            
+            det_info = {
+                "bbox": [int(b) for b in bbox],
+                "matched": is_matched,
+                "confidence": round(float(similarity), 3) if similarity else 0.0,
+                "threshold": round(float(threshold), 3),
+                "name": match.get("name", "Unknown Face") if (is_matched and match) else "Unknown Face",
+                "enrollment_no": match.get("enrollment_no", "") if (is_matched and match) else ""
+            }
+            
+            # If matched, crop face and trigger recognition_callback
+            if is_matched and match:
+                x1, y1, x2, y2 = bbox
+                try:
+                    h, w = frame.shape[:2]
+                    face_crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+                    _, buf = cv2.imencode('.jpg', face_crop)
+                    crop_bytes = buf.tobytes()
+                except Exception:
+                    crop_bytes = None
+                
+                try:
+                    if hasattr(recog, "on_recognize") and callable(recog.on_recognize):
+                        recog.on_recognize(
+                            {"name": match["name"], "enrollment_no": match["enrollment_no"]},
+                            float(similarity), bbox, crop_bytes
+                        )
+                except Exception as cb_err:
+                    print(f"[RECOG FRAME CALLBACK WARNING] {cb_err}")
+                    
+            detections.append(det_info)
+            
+        return {
+            "success": True, 
+            "detections": detections, 
+            "faces_count": len(detections),
+            "timestamp": datetime.datetime.now().strftime("%I:%M:%S %p")
+        }
+    except Exception as e:
+        return {"success": False, "msg": f"Recognition processing error: {str(e)}"}
+
 @app.get("/api/teacher/students_list")
 def api_teacher_students_list(session: Optional[str] = Cookie(None)):
-    """Teacher views all students with credentials"""
+    """Teacher views all students with credentials (SEC-02: Passwords omitted for security)"""
     user = get_session(session)
     if not user or user.get("role") != "teacher":
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -2131,7 +2439,7 @@ def api_teacher_students_list(session: Optional[str] = Cookie(None)):
         conn = get_db_conn()
         cur = conn.cursor(dictionary=True)
         cur.execute("""
-            SELECT id, username, password, name, enrollment_no, class, parent_phone 
+            SELECT id, username, name, enrollment_no, class, parent_phone 
             FROM students 
             ORDER BY enrollment_no ASC
         """)
@@ -2140,7 +2448,7 @@ def api_teacher_students_list(session: Optional[str] = Cookie(None)):
         conn.close()
         return {"success": True, "students": students}
     except Exception as e:
-        return {"success": False, "msg": str(e)}
+        return {"success": False, "msg": str(e), "students": []}
 
 @app.post("/api/teacher/reset_student_password")
 def api_teacher_reset_student_password(
@@ -2148,21 +2456,81 @@ def api_teacher_reset_student_password(
     new_password: str = Form(...),
     session: Optional[str] = Cookie(None)
 ):
-    """Teacher resets a student's password"""
+    """Teacher resets a student's password to a secure bcrypt hash (SEC-02)"""
     user = get_session(session)
     if not user or user.get("role") != "teacher":
         raise HTTPException(status_code=401, detail="Unauthorized")
         
+    new_password = new_password.strip()
+    if len(new_password) < 4:
+        return {"success": False, "msg": "Password must be at least 4 characters long"}
+        
     try:
+        hashed_pw = hash_password(new_password)
         conn = get_db_conn()
         cur = conn.cursor()
-        cur.execute("UPDATE students SET password = %s WHERE id = %s", (new_password, student_id))
+        cur.execute("UPDATE students SET password = %s WHERE id = %s", (hashed_pw, student_id))
         conn.commit()
         cur.close()
         conn.close()
-        return {"success": True, "msg": "✅ Student password updated successfully!"}
+        return {"success": True, "msg": "✅ Student password updated and encrypted successfully!"}
     except Exception as e:
         return {"success": False, "msg": str(e)}
+
+@app.get("/api/teacher/search_students")
+def api_teacher_search_students(
+    q: str = "",
+    session: Optional[str] = Cookie(None)
+):
+    """
+    Search registered students by partial Enrollment ID (e.g. 'MUR') or Name.
+    Returns matched students with details for auto-filling enrollment and manual attendance.
+    """
+    user = get_session(session)
+    if not user or user.get("role") != "teacher":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    query_str = (q or "").strip()
+    if not query_str:
+        return {"success": True, "students": []}
+        
+    like_pat = f"%{query_str}%"
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT s.Enrollment_No, s.Name, COALESCE(s.parent_phone, st.parent_phone, '') AS parent_phone,
+                   COALESCE(st.username, '') AS username, COALESCE(st.class, 'B.Tech CSE - 7th Sem') AS class
+            FROM student_detail s
+            LEFT JOIN students st ON s.Enrollment_No = st.enrollment_no
+            WHERE s.Enrollment_No LIKE %s OR s.Name LIKE %s OR st.username LIKE %s
+            UNION
+            SELECT st.enrollment_no AS Enrollment_No, st.name AS Name, COALESCE(st.parent_phone, '') AS parent_phone,
+                   st.username, st.class
+            FROM students st
+            WHERE st.enrollment_no LIKE %s OR st.name LIKE %s OR st.username LIKE %s
+            LIMIT 15
+        """, (like_pat, like_pat, like_pat, like_pat, like_pat, like_pat))
+        
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "query": query_str,
+            "students": [
+                {
+                    "enrollment_no": r["Enrollment_No"],
+                    "name": r["Name"],
+                    "parent_phone": r["parent_phone"],
+                    "username": r["username"] or r["Enrollment_No"].lower(),
+                    "class": r["class"] or "B.Tech CSE - 7th Sem"
+                } for r in rows
+            ]
+        }
+    except Exception as e:
+        return {"success": False, "msg": str(e), "students": []}
 
 # ==================== STUDENT PROFILE & ANALYTICS ====================
 
@@ -2192,19 +2560,14 @@ def api_student_profile(session: Optional[str] = Cookie(None)):
         
         for subject_name, table_name in CANONICAL_SUBJECTS:
             try:
-                # Total sessions held
-                cur.execute(f"SELECT COUNT(DISTINCT DATE(Attendance_DateTime)) as total_held FROM {table_name}")
-                held_res = cur.fetchone()
-                total_held = held_res['total_held'] if held_res else 0
+                # Group records into true distinct sessions (supports multiple lectures on same day)
+                cur.execute(f"SELECT id, Enrollment_No, Attendance_DateTime, Status FROM {table_name} ORDER BY Attendance_DateTime ASC")
+                all_tbl_records = cur.fetchall()
+                sessions, rmap = group_records_into_sessions(all_tbl_records)
+                total_held = len(sessions)
                 
-                # Attended sessions
-                cur.execute(f"""
-                    SELECT COUNT(DISTINCT DATE(Attendance_DateTime)) as attended 
-                    FROM {table_name} 
-                    WHERE Enrollment_No = %s AND Status IN ('Present', 'Late')
-                """, (enrollment_no,))
-                att_res = cur.fetchone()
-                attended = att_res['attended'] if att_res else 0
+                attended_session_ids = set(rmap.get(r['id']) for r in all_tbl_records if r['Enrollment_No'] == enrollment_no and r['Status'] in ('Present', 'Late') and r['id'] in rmap)
+                attended = len(attended_session_ids)
                 
                 pct = round((attended / total_held * 100), 1) if total_held > 0 else 0
                 total_attended_overall += attended
@@ -2259,9 +2622,23 @@ def api_student_profile(session: Optional[str] = Cookie(None)):
         return {"success": False, "msg": str(e)}
 
 @app.get("/api/student/photo/{enrollment_no}")
-def api_student_photo(enrollment_no: str):
-    """Serve student profile photo from Dataset directory or return clean SVG avatar"""
+def api_student_photo(enrollment_no: str, session: Optional[str] = Cookie(None)):
+    """Serve student profile photo from Dataset directory or return clean SVG avatar (SEC-03 Protected)"""
+    user = get_session(session)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
     enrollment_no = enrollment_no.strip().upper()
+    if not ENROLLMENT_REGEX.match(enrollment_no):
+        raise HTTPException(status_code=400, detail="Invalid enrollment number format")
+        
+    # Student role: can only view own photo
+    if user.get("role") == "student":
+        user_enroll = (user.get("enrollment_no") or "").upper()
+        if user_enroll != enrollment_no:
+            raise HTTPException(status_code=403, detail="Forbidden: You are only authorized to view your own student photo")
+    elif user.get("role") != "teacher":
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Check Dataset directory for student photos
     if os.path.exists(DATASET_DIR):
@@ -2329,10 +2706,11 @@ def api_student_export_my_report(session: Optional[str] = Cookie(None)):
         total_attended_all = 0
         
         for sub_name, tbl_name in CANONICAL_SUBJECTS:
-            # Total held
-            cur.execute(f"SELECT DISTINCT DATE(Attendance_DateTime) as att_date FROM {tbl_name} ORDER BY att_date ASC")
-            held_dates = [r['att_date'] for r in cur.fetchall()]
-            held_count = len(held_dates)
+            # Group into true distinct sessions (supports multiple lectures on same day)
+            cur.execute(f"SELECT id, Enrollment_No, Attendance_DateTime, Status FROM {tbl_name} ORDER BY Attendance_DateTime ASC")
+            all_tbl_records = cur.fetchall()
+            sessions, rmap = group_records_into_sessions(all_tbl_records)
+            held_count = len(sessions)
             
             # Student records
             cur.execute(f"""
@@ -2343,8 +2721,8 @@ def api_student_export_my_report(session: Optional[str] = Cookie(None)):
             """, (enrollment_no,))
             records = cur.fetchall()
             
-            att_dates = set(r['Attendance_DateTime'].date() for r in records if r['Status'] in ('Present', 'Late'))
-            attended_count = len(att_dates)
+            attended_session_ids = set(rmap.get(r['id']) for r in records if r['Status'] in ('Present', 'Late') and r['id'] in rmap)
+            attended_count = len(attended_session_ids)
             missed_count = max(0, held_count - attended_count)
             pct = round((attended_count / held_count * 100), 1) if held_count > 0 else 0
             
@@ -2629,8 +3007,21 @@ def api_student_export_my_report(session: Optional[str] = Cookie(None)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/start_webcam")
-def api_start_webcam(session: Optional[str] = Cookie(None)):
+@app.api_route("/api/start_webcam", methods=["GET", "POST"])
+async def api_start_webcam(
+    request: Request,
+    source: Optional[str] = None,
+    session: Optional[str] = Cookie(None)
+):
+    """
+    Start attendance camera recognition.
+    Supports multi-camera sources:
+    - 0: Default laptop / integrated webcam
+    - 1: External USB camera index 1
+    - 2: External USB camera index 2
+    - 'http://<ip>:<port>/video': Mobile phone IP Webcam stream
+    - 'rtsp://...': Classroom CCTV IP Network camera stream
+    """
     user = get_session(session)
     if not user or user.get("role") != "teacher":
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -2638,18 +3029,35 @@ def api_start_webcam(session: Optional[str] = Cookie(None)):
     global recog_thread, current_recognitions, active_camera_teacher
     active_camera_teacher = user
     
+    # Extract source parameter from form or query or default to "0"
+    cam_source = source
+    if not cam_source and request.method == "POST":
+        try:
+            form = await request.form()
+            cam_source = form.get("source")
+        except Exception:
+            pass
+    if not cam_source:
+        cam_source = "0"
+    cam_source = str(cam_source).strip()
+
     if recog_thread and recog_thread.is_alive():
-        return {"success": True, "msg": "Camera is already running"}
+        # Stop existing camera to switch to requested source
+        try:
+            recog.stop_webcam()
+            time.sleep(0.5)
+        except Exception:
+            pass
     
     current_recognitions.clear()
     
     def run():
-        recog.run_webcam(show_window=False)
+        recog.run_webcam(source=cam_source, show_window=False)
     
     recog_thread = threading.Thread(target=run, daemon=True)
     recog_thread.start()
     
-    return {"success": True, "msg": "Webcam started"}
+    return {"success": True, "msg": f"Camera started on source: {cam_source}", "source": cam_source}
 
 @app.get("/api/stop_webcam")
 def api_stop_webcam(session: Optional[str] = Cookie(None)):

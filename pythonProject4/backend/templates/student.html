@@ -3,20 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Dashboard — Vision Mark</title>
+  <title>Student Portal — Vision Mark</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
-  <link href="/static/css/style.css" rel="stylesheet">
-  <!-- Chart.js for student analytics -->
+  <link href="/static/css/style.css?v=8" rel="stylesheet">
+  <!-- Chart.js for analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Student Profile Hero Card */
+    /* Student Specific Component Extensions */
     .student-profile-hero {
-      background: linear-gradient(135deg, #1B365D 0%, #2A5298 100%);
-      color: white;
-      border-radius: 16px;
-      padding: 28px;
-      margin-bottom: 25px;
-      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.25);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -30,167 +29,168 @@
     }
     .profile-avatar-wrapper {
       position: relative;
-      width: 85px;
-      height: 85px;
+      width: 72px;
+      height: 72px;
       flex-shrink: 0;
     }
     .profile-avatar-img {
-      width: 85px;
-      height: 85px;
-      border-radius: 50%;
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-md);
       object-fit: cover;
-      border: 3px solid #ffffff;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface-raised);
       display: block;
     }
     .profile-avatar {
-      width: 85px;
-      height: 85px;
-      border-radius: 50%;
-      background: white;
-      color: #1B365D;
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface-raised);
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.2rem;
-      font-weight: 700;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-      border: 3px solid rgba(255,255,255,0.8);
-    }
-    .btn-student-download {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-      color: white !important;
-      font-weight: 700;
-      font-size: 0.88rem;
-      padding: 9px 16px;
-      border-radius: 8px;
-      text-decoration: none;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
-      transition: all 0.2s ease;
-      margin-top: 10px;
-    }
-    .btn-student-download:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+      font-size: 1.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
     }
     .profile-info h3 {
-      font-size: 1.6rem;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 4px;
-      font-weight: 700;
+      letter-spacing: -0.3px;
     }
     .profile-meta {
       display: flex;
-      gap: 15px;
+      gap: 12px;
       flex-wrap: wrap;
-      font-size: 0.95rem;
-      opacity: 0.9;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
     }
     .profile-meta span {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+    }
+    .profile-meta code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: var(--bg-surface-raised);
+      padding: 1px 6px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border-subtle);
     }
     .profile-right {
       text-align: right;
       min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
     }
     .attendance-gauge-val {
-      font-size: 2.8rem;
-      font-weight: 800;
+      font-size: 2.4rem;
+      font-weight: 600;
+      color: var(--text-primary);
       line-height: 1;
-      margin-bottom: 4px;
+      letter-spacing: -0.5px;
     }
     .eligibility-badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      font-size: 0.76rem;
+      font-weight: 600;
     }
     .badge-pass {
-      background: #4CAF50;
-      color: white;
+      background: var(--success-surface);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
     }
     .badge-warn {
-      background: #F44336;
-      color: white;
+      background: var(--danger-surface);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
     }
 
-    /* Advisory Banner */
+    /* Advisory Box */
     .advisory-box {
-      background: white;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 25px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 24px;
       display: flex;
-      align-items: center;
-      gap: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      border-left: 5px solid #2196F3;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text-primary);
     }
     .advisory-icon {
-      font-size: 1.8rem;
-    }
-    .advisory-text {
-      font-size: 0.95rem;
-      color: #333;
+      font-size: 1.1rem;
+      line-height: 1.4;
+      flex-shrink: 0;
     }
 
-    /* Charts Row */
-    .student-charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 22px;
-      margin-bottom: 25px;
-    }
-    @media (max-width: 850px) {
-      .student-charts-row { grid-template-columns: 1fr; }
-    }
-    .chart-box {
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    }
-    .chart-box h4 {
-      font-size: 1.05rem;
-      color: #2D3748;
-      margin-bottom: 15px;
+    /* Subject Tabs */
+    .subject-tabs {
       display: flex;
+      gap: 6px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .subject-tab {
+      padding: 7px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all var(--duration-fast);
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
-
-    /* Subject Badges in Tabs */
+    .subject-tab:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+    .subject-tab.active {
+      background: var(--text-primary);
+      color: #ffffff;
+      border-color: var(--text-primary);
+    }
     .tab-badge {
-      font-size: 0.75rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      margin-left: 6px;
-      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      padding: 1px 5px;
+      border-radius: var(--radius-xs);
+      font-weight: 600;
     }
-    .tab-badge-pass { background: #E8F5E9; color: #2E7D32; }
-    .tab-badge-fail { background: #FFEBEE; color: #C62828; }
+    .tab-badge-pass { background: rgba(22, 163, 74, 0.2); color: #16a34a; }
+    .tab-badge-fail { background: rgba(220, 38, 38, 0.2); color: #dc2626; }
+    .subject-tab.active .tab-badge-pass { background: rgba(255, 255, 255, 0.25); color: #ffffff; }
+    .subject-tab.active .tab-badge-fail { background: rgba(255, 255, 255, 0.25); color: #ffffff; }
   </style>
 </head>
 <body class="dashboard-page">
-  <div class="logo-background"></div>
-  
+
+  <!-- Unified Top Bar -->
   <nav class="navbar">
     <div class="navbar-brand">
-      <img src="/static/images/logo.png" alt="Logo" class="navbar-logo">
-      <span>Vision Mark — Student Portal</span>
+      <img src="/static/images/logo.png" alt="Vision Mark" class="navbar-logo">
+      <span>Vision Mark · Student Portal</span>
     </div>
     <div class="navbar-user">
-      <span id="welcome">Loading...</span>
-      <button id="logoutBtn" class="btn btn-small btn-danger">Logout</button>
+      <span id="welcome">Loading session...</span>
+      <button id="logoutBtn" class="btn btn-secondary btn-small">Sign Out</button>
     </div>
   </nav>
 
@@ -200,28 +200,29 @@
     <div class="student-profile-hero">
       <div class="profile-left">
         <div class="profile-avatar-wrapper">
-          <img id="profPhoto" class="profile-avatar-img" src="/api/student/photo/unknown" alt="Student Photo" onerror="this.style.display='none'; document.getElementById('avatarLetter').style.display='flex';">
+          <img id="profPhoto" class="profile-avatar-img" src="/api/student/photo/unknown" alt="Student Profile" onerror="this.style.display='none'; document.getElementById('avatarLetter').style.display='flex';">
           <div class="profile-avatar" id="avatarLetter" style="display: none;">S</div>
         </div>
         <div class="profile-info">
           <h3 id="profName">—</h3>
           <div class="profile-meta">
-            <span><strong>Roll / Enrollment:</strong> <span id="profEnroll">—</span></span>
-            <span>•</span>
+            <span><strong>Enrollment:</strong> <code id="profEnroll">—</code></span>
+            <span>·</span>
             <span><strong>Class:</strong> <span id="profClass">—</span></span>
-            <span>•</span>
-            <span><strong>Username:</strong> <code id="profUsername" style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 4px;">—</code></span>
-            <span>•</span>
-            <span><strong>Parent Contact:</strong> <span id="profParentPhone">—</span></span>
+            <span>·</span>
+            <span><strong>Username:</strong> <code id="profUsername">—</code></span>
+            <span>·</span>
+            <span><strong>Contact:</strong> <span id="profParentPhone">—</span></span>
           </div>
         </div>
       </div>
       <div class="profile-right">
         <div class="attendance-gauge-val" id="profOverallPct">—%</div>
-        <div class="eligibility-badge" id="profStatusBadge">Calculating...</div>
-        <div>
-          <a href="/api/student/export_my_report" target="_blank" class="btn-student-download">
-            <span>📥</span> Download My Report (.xlsx)
+        <div class="eligibility-badge" id="profStatusBadge">Calculating status...</div>
+        <div style="margin-top: 6px;">
+          <a href="/api/student/export_my_report" target="_blank" class="btn btn-secondary btn-small">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Register (.xlsx)
           </a>
         </div>
       </div>
@@ -229,9 +230,11 @@
 
     <!-- Attendance Advisory Alert -->
     <div class="advisory-box" id="advisoryBox">
-      <div class="advisory-icon" id="advisoryIcon">💡</div>
+      <div class="advisory-icon" id="advisoryIcon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </div>
       <div class="advisory-text" id="advisoryText">
-        Analyzing your attendance records against the university 75% examination eligibility rule...
+        Evaluating verified attendance records against institutional 75% examination eligibility requirement...
       </div>
     </div>
 
@@ -239,16 +242,16 @@
     <div class="student-charts-row">
       <!-- Subject-wise Attendance Percentage Bar Chart -->
       <div class="chart-box">
-        <h4><span>📊</span> Subject-Wise Attendance % (75% Benchmark)</h4>
-        <div style="position: relative; height: 260px;">
+        <h4>Subject-Wise Attendance Rate</h4>
+        <div style="position: relative; height: 240px;">
           <canvas id="subjectBarChart"></canvas>
         </div>
       </div>
 
       <!-- Overall Present vs Absent Ratio Donut Chart -->
       <div class="chart-box">
-        <h4><span>🥧</span> Overall Classes Attended vs Missed</h4>
-        <div style="position: relative; height: 260px;">
+        <h4>Attendance Distribution</h4>
+        <div style="position: relative; height: 240px;">
           <canvas id="ratioDonutChart"></canvas>
         </div>
       </div>
@@ -265,14 +268,18 @@
     </div>
 
     <!-- Attendance Table -->
-    <div class="card" style="background: white; color: #333;">
+    <div class="card">
       <div class="card-header">
-        <h3 id="currentSubjectTitle" style="color: #2D3748;">All Attendance Records</h3>
+        <h3 id="currentSubjectTitle">Attendance Verification Records</h3>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <a href="/api/student/export_my_report" target="_blank" class="btn btn-small btn-success" style="background: #10B981; color: white; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px;">
-            <span>📥</span> Download Excel (.xlsx)
+          <a href="/api/student/export_my_report" target="_blank" class="btn btn-secondary btn-small">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Sheet (.xlsx)
           </a>
-          <button id="refreshBtn" class="btn btn-small btn-secondary">🔄 Refresh</button>
+          <button id="refreshBtn" class="btn btn-secondary btn-small">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -284,14 +291,14 @@
               <th>Status</th>
               <th>Verification Method</th>
               <th>Official Remarks / Audit Note</th>
-              <th>AI Match %</th>
-              <th>Capture</th>
+              <th>Biometric Match</th>
+              <th>Optical Capture</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
-        <div id="noData" class="no-data" style="display:none;">
-          <p>No attendance records found for this selection</p>
+        <div id="noData" class="no-data" style="display:none; padding: 32px; text-align: center; color: var(--text-muted);">
+          No attendance verification records found for the selected view.
         </div>
       </div>
     </div>
@@ -311,7 +318,7 @@
         return;
       }
       currentUser = u.user;
-      document.getElementById('welcome').innerText = `Welcome, ${currentUser.name || currentUser.username}`;
+      document.getElementById('welcome').innerText = `${currentUser.name || currentUser.username} (${currentUser.enrollment_no || 'Student'})`;
       
       await loadStudentProfile();
       await loadAttendance();
@@ -340,21 +347,18 @@
 
         const badge = document.getElementById('profStatusBadge');
         const advBox = document.getElementById('advisoryBox');
-        const advIcon = document.getElementById('advisoryIcon');
         const advText = document.getElementById('advisoryText');
 
         if (p.overall_percentage >= 75) {
           badge.className = 'eligibility-badge badge-pass';
-          badge.textContent = '✅ Exam Eligible (≥ 75%)';
-          advBox.style.borderLeftColor = '#4CAF50';
-          advIcon.textContent = '🎉';
-          advText.innerHTML = `<strong>Safe Standing:</strong> You have attended <strong>${p.total_attended} of ${p.total_classes}</strong> sessions (${p.overall_percentage}%). You are eligible for examinations and can miss up to <strong>${p.safe_margin}</strong> classes while staying safely above the 75% bar.`;
+          badge.textContent = 'Exam Eligible (≥ 75%)';
+          advBox.style.borderLeftColor = 'var(--success)';
+          advText.innerHTML = `<strong>Eligible Standing:</strong> Attended <strong>${p.total_attended} of ${p.total_classes}</strong> sessions (${p.overall_percentage}%). You are eligible for university examinations and may miss up to <strong>${p.safe_margin}</strong> classes while staying safely above the 75% requirement.`;
         } else {
           badge.className = 'eligibility-badge badge-warn';
-          badge.textContent = '⚠️ Shortage Alert (< 75%)';
-          advBox.style.borderLeftColor = '#F44336';
-          advIcon.textContent = '⚠️';
-          advText.innerHTML = `<strong>Attendance Defaulter Warning:</strong> Your current attendance is <strong>${p.overall_percentage}%</strong> (${p.total_attended} attended out of ${p.total_classes} total classes). You need to attend the next <strong>${p.needed_classes}</strong> consecutive classes without absence to achieve 75% exam eligibility!`;
+          badge.textContent = 'Attendance Shortage (< 75%)';
+          advBox.style.borderLeftColor = 'var(--danger)';
+          advText.innerHTML = `<strong>Attendance Shortage Notice:</strong> Current standing is <strong>${p.overall_percentage}%</strong> (${p.total_attended} attended out of ${p.total_classes} total sessions). You must attend the next <strong>${p.needed_classes}</strong> consecutive classes without absence to regain 75% exam eligibility.`;
         }
 
         // Render Charts
@@ -366,15 +370,30 @@
       }
     }
 
+    let cachedBreakdown = [];
+    let cachedAttended = 0;
+    let cachedMissed = 0;
+
+    function getChartTheme() {
+      return {
+        grid: 'rgba(15, 23, 42, 0.06)',
+        text: '#475569',
+        border: '#ffffff',
+        emptyBg: '#e2e8f0'
+      };
+    }
+
     function renderSubjectBarChart(breakdown) {
+      cachedBreakdown = breakdown || cachedBreakdown;
       const ctx = document.getElementById('subjectBarChart').getContext('2d');
       if (subjectBarChartInstance) subjectBarChartInstance.destroy();
 
-      if (!breakdown || breakdown.length === 0) return;
+      if (!cachedBreakdown || cachedBreakdown.length === 0) return;
 
-      const labels = breakdown.map(b => b.subject);
-      const values = breakdown.map(b => b.percentage);
-      const colors = breakdown.map(b => b.percentage >= 75 ? 'rgba(76, 175, 80, 0.85)' : 'rgba(244, 67, 54, 0.85)');
+      const theme = getChartTheme();
+      const labels = cachedBreakdown.map(b => b.subject);
+      const values = cachedBreakdown.map(b => b.percentage);
+      const colors = cachedBreakdown.map(b => b.percentage >= 75 ? '#16a34a' : '#dc2626');
 
       subjectBarChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -384,7 +403,8 @@
             label: 'Attendance %',
             data: values,
             backgroundColor: colors,
-            borderRadius: 6
+            borderRadius: 4,
+            barThickness: 24
           }]
         },
         options: {
@@ -394,13 +414,17 @@
             y: {
               beginAtZero: true,
               max: 100,
-              ticks: { callback: v => v + '%' }
+              grid: { color: theme.grid },
+              ticks: { color: theme.text, callback: v => v + '%', font: { family: 'ui-monospace, monospace', size: 11 } }
             },
             x: {
+              grid: { display: false },
               ticks: {
+                color: theme.text,
+                font: { size: 11 },
                 callback: function(val) {
                   const lbl = this.getLabelForValue(val);
-                  return lbl.length > 15 ? lbl.substr(0, 15) + '…' : lbl;
+                  return lbl.length > 14 ? lbl.substr(0, 14) + '…' : lbl;
                 }
               }
             }
@@ -408,6 +432,9 @@
           plugins: {
             legend: { display: false },
             tooltip: {
+              backgroundColor: '#0f172a',
+              padding: 10,
+              cornerRadius: 6,
               callbacks: {
                 label: ctx => `Attendance: ${ctx.raw}% (${ctx.raw >= 75 ? 'Eligible' : 'Shortage'})`
               }
@@ -418,26 +445,38 @@
     }
 
     function renderRatioDonutChart(attended, missed) {
+      if (attended !== undefined) cachedAttended = attended;
+      if (missed !== undefined) cachedMissed = missed;
       const ctx = document.getElementById('ratioDonutChart').getContext('2d');
       if (ratioDonutChartInstance) ratioDonutChartInstance.destroy();
 
+      const theme = getChartTheme();
       ratioDonutChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Attended Classes', 'Missed Classes'],
+          labels: ['Attended', 'Missed'],
           datasets: [{
-            data: [attended || 0, missed || 0],
-            backgroundColor: ['#4CAF50', '#F44336'],
+            data: [cachedAttended || 0, cachedMissed || 0],
+            backgroundColor: ['#16a34a', theme.emptyBg],
             borderWidth: 2,
-            borderColor: '#ffffff'
+            borderColor: theme.border
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom' }
-          }
+            legend: {
+              position: 'bottom',
+              labels: { color: theme.text, boxWidth: 12, padding: 14, font: { size: 12 } }
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              padding: 10,
+              cornerRadius: 6
+            }
+          },
+          cutout: '72%'
         }
       });
     }
@@ -474,21 +513,20 @@
       const percentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : 0;
 
       const stats = [
-        { label: 'Total Tracked Sessions', value: totalClasses, icon: '📚', color: '#4CAF50' },
-        { label: 'Attended Classes', value: totalPresent, icon: '✅', color: '#2196F3' },
-        { label: 'Overall Attendance Rate', value: percentage + '%', icon: '📊', color: '#FF9800' }
+        { label: 'Total Tracked Sessions', value: totalClasses, sub: 'Scheduled semester classes' },
+        { label: 'Attended Sessions', value: totalPresent, sub: 'Verified present & late entry' },
+        { label: 'Overall Attendance Rate', value: percentage + '%', sub: 'Institutional standard: 75%' }
       ];
 
       stats.forEach(stat => {
         const card = document.createElement('div');
         card.className = 'stat-card';
-        card.style.borderLeft = `4px solid ${stat.color}`;
         card.innerHTML = `
-          <div class="stat-icon">${stat.icon}</div>
-          <div class="stat-content">
-            <div class="stat-value">${stat.value}</div>
-            <div class="stat-label">${stat.label}</div>
+          <div class="kpi-top-row">
+            <span class="stat-label">${stat.label}</span>
           </div>
+          <div class="stat-value">${stat.value}</div>
+          <div class="kpi-subtext-badge">${stat.sub}</div>
         `;
         statsGrid.appendChild(card);
       });
@@ -544,12 +582,12 @@
       
       let records = [];
       if (currentSubject === 'all') {
-        title.textContent = 'All Subjects — Attendance History';
+        title.textContent = 'All Subjects — Attendance Ledger';
         Object.values(allAttendance).forEach(subjectRecords => {
           records = records.concat(subjectRecords);
         });
       } else {
-        title.textContent = `${currentSubject} — Attendance History`;
+        title.textContent = `${currentSubject} — Attendance Ledger`;
         records = allAttendance[currentSubject] || [];
       }
 
@@ -575,22 +613,25 @@
                        (r.recognized_by || '').toLowerCase().includes('biometric') || 
                        (r.recognized_by || '').toLowerCase().includes('auto');
         const methodBadge = isAuto 
-          ? `<span class="badge" style="background:#E0F2FE; color:#0369A1; font-weight:700;">🤖 Biometric Face</span>` 
-          : `<span class="badge" style="background:#F3E8FF; color:#6B21A8; font-weight:700;">✍️ Faculty Manual</span>`;
+          ? `<span class="method-badge">Biometric Face</span>` 
+          : `<span class="method-badge">Faculty Override</span>`;
         const confidence = r.confidence ? `${(r.confidence * 100).toFixed(0)}%` : (isAuto ? '100%' : 'Manual');
         const normalizedImg = r.image_path ? r.image_path.replace(/\\\\/g, '/') : null;
         const displayDate = r.display_date || r.date;
-        const dayLabel = r.day ? ` <span style="font-size:0.8rem; color:#64748B;">(${r.day.substr(0,3)})</span>` : '';
-        const remarksText = r.remarks || (r.status === 'Present' ? 'Verified Present via AI Biometric' : 'Class Session Absence');
+        const dayLabel = r.day ? ` <span style="font-size:0.78rem; color:var(--text-muted); font-weight:normal;">(${r.day.substr(0,3)})</span>` : '';
+        const remarksText = r.remarks || (r.status === 'Present' ? 'Verified present via biometric match' : 'Session absence recorded');
         
+        const capFile = normalizedImg ? normalizedImg.split(/[\\/]/).pop() : null;
+        const capLink = capFile ? `<a href="/api/captures/${encodeURIComponent(capFile)}" target="_blank" class="btn btn-secondary btn-small" style="padding: 2px 8px; font-size: 0.75rem;">View Capture</a>` : '—';
+
         tr.innerHTML = `
           <td><strong>${displayDate}</strong>${dayLabel}</td>
-          <td><strong style="color: #1E3A8A; font-size: 0.92rem;">${r.time}</strong></td>
-          <td><span class="badge ${statusClass}">${r.status}</span></td>
+          <td><span style="font-family: ui-monospace, monospace; font-size: 0.85rem; font-weight: 500;">${r.time}</span></td>
+          <td><span class="status-pill ${statusClass}">${r.status}</span></td>
           <td>${methodBadge}</td>
-          <td style="max-width: 240px; font-size: 0.86rem; color: #334155; line-height: 1.35;">${remarksText}</td>
-          <td>${confidence}</td>
-          <td>${normalizedImg ? `<a href="/static/${normalizedImg}" target="_blank" class="btn btn-small btn-secondary" style="padding: 2px 8px;">📷 View</a>` : '—'}</td>
+          <td style="max-width: 240px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.35;">${remarksText}</td>
+          <td><span class="confidence-chip">${confidence}</span></td>
+          <td>${capLink}</td>
         `;
         tbody.appendChild(tr);
       });
