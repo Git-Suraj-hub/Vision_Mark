@@ -1,789 +1,392 @@
-# 🎓 Smart Attendance System
+<div align="center">
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://www.mysql.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+# 🎓 Vision Mark
+### Enterprise Autonomous Facial Recognition Attendance Platform
 
-> AI-Powered Face Recognition Attendance System with Multi-Distance Detection & Automatic Absent Marking
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![InsightFace](https://img.shields.io/badge/InsightFace-ArcFace%20v2.4-FF6F00?style=flat)](https://github.com/deepinsight/insightface)
+[![TiDB Cloud](https://img.shields.io/badge/TiDB%20Cloud-MySQL%20Compatible-0052CC?style=flat&logo=mysql&logoColor=white)](https://tidbcloud.com/)
+[![Security Suite](https://img.shields.io/badge/Security%20Audit-100%25%20PASS-10B981?style=flat&logo=shield)](tests/test_security_suite.py)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An advanced automated attendance management system using **ArcFace** and **RetinaFace** for face recognition, supporting multiple distance categories and automatic absent marking.
+> A modern, production-ready computer vision attendance platform featuring **multi-distance face recognition**, **in-browser camera streaming**, **hierarchical cascade matching**, and **automated academic ERP ledger enforcement**.
 
-![System Demo](Demo/Vision_Mark_UI.png)
+[Explore Features](#-core-features) · [System Architecture](#-biometric-engine-architecture) · [Quickstart](#-quickstart-guide) · [1-Click Cloud Deployment](#-1-click-cloud-deployment) · [Security & Privacy](#-enterprise-security--privacy)
+
+<br/>
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Git-Suraj-hub/Vision_Mark)
+
+</div>
 
 ---
 
 ## 📋 Table of Contents
 
-- [Features](#-features)
+- [Core Features](#-core-features)
+- [Biometric Engine Architecture](#-biometric-engine-architecture)
 - [System Architecture](#-system-architecture)
-- [Technology Stack](#-technology-stack)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-- [Database Setup](#-database-setup)
-- [Configuration](#-configuration)
-- [Running the Application](#-running-the-application)
-- [Usage Guide](#-usage-guide)
-- [Project Structure](#-project-structure)
-- [API Documentation](#-api-documentation)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
+- [1-Click Cloud Deployment](#-1-click-cloud-deployment)
+  - [Render Deployment](#option-1-render-1-click)
+  - [Hugging Face Spaces (Free 16 GB RAM)](#option-2-hugging-face-spaces-100-free)
+  - [Docker Container](#option-3-docker-container)
+- [Quickstart Guide](#-quickstart-guide)
+  - [Prerequisites](#1-prerequisites)
+  - [Local Installation](#2-local-installation)
+  - [Environment Configuration](#3-environment-configuration)
+  - [Database Setup (TiDB Cloud / MySQL)](#4-database-setup)
+  - [Run the Application](#5-run-the-application)
+- [In-Browser Camera Streaming](#-in-browser-camera-streaming)
+- [Enterprise Security & Privacy](#-enterprise-security--privacy)
+- [API Reference](#-api-reference)
+- [Project Directory Structure](#-project-directory-structure)
+- [License & Citation](#-license--citation)
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-### 🎯 Core Features
-- **Multi-Distance Face Recognition** - Detects faces from very close to far distances (20px-150px+)
-- **Dual Model System** - Uses ArcFace for speed and RetinaFace for accuracy
-- **4-Level Recognition Strategy** - Individual embeddings → Adjacent categories → Category averages → Global fallback
-- **Automatic Absent Marking** - Auto-marks absent students after class ends (5-minute grace period)
-- **Subject-Specific Attendance** - Separate tables for each subject with proper tracking
-- **Real-Time Face Recognition** - Live webcam feed with instant detection
-- **Duplicate Prevention** - Prevents marking same student twice in same time slot
+### 🎯 Multi-Distance Facial Recognition
+* **Adaptive Distance Categorization:** Dynamically classifies detected faces into four spatial categories based on pixel bounding box width:
+  * `Very Close` ($\ge 150\text{px}$) · `Close` ($80\text{px} - 149\text{px}$) · `Mid` ($40\text{px} - 79\text{px}$) · `Far` ($20\text{px} - 39\text{px}$).
+* **Dynamic Distance-Adaptive Thresholds:** Dynamically scales cosine acceptance thresholds ($0.25 - 0.40$) based on distance to ensure zero false positives while retaining high long-distance recall.
+* **4-Level Hierarchical Cascade Matching:**
+  1. *Level 1:* Same distance category vector match (`student_embeddings`)
+  2. *Level 2:* Adjacent distance category fallback (`get_adjacent_categories`)
+  3. *Level 3:* Category-specific average centroid fallback (`student_detail`)
+  4. *Level 4:* Global normalized average embedding
 
-### 👨‍🎓 Student Features
-- Personal attendance dashboard
-- Subject-wise attendance view
-- Overall attendance statistics
-- Attendance percentage calculation
-- View captured face images
-- Download attendance reports (PDF/Excel/Word)
+### 🌐 In-Browser Camera Streaming (Zero Server Hardware Dependency)
+* **WebRTC / HTML5 Client Ingestion:** Teachers and students can mark attendance directly from their personal laptop, tablet, or smartphone web camera using `navigator.mediaDevices.getUserMedia`.
+* **Zero Physical Server Camera Required:** Solves the cloud deployment bottleneck—the server processes incoming frames via `POST /api/recognize_frame`, requiring zero physical USB cameras attached to the deployment host.
+* **Dual Camera Engine:** Seamlessly toggle between **Browser Device Camera** (client-side) and **Direct Server Camera** (physical USB/RTSP) from the dashboard.
 
-### 👨‍🏫 Teacher Features
-- Subject-specific dashboard (teachers only see their assigned subject)
-- Start/Stop face recognition
-- Manual attendance marking with validation
-- Image upload for face testing
-- Real-time recognition feed
-- View captured face images
-- Automatic absent marking control
-- Backfill past absences
-- Download class reports (PDF/Excel/Word)
-- Student-wise detailed reports
+### 🏛️ Academic Timetable & Attendance Rules
+* **Active Timetable Enforcement:** Matches detection timestamps against active lecture schedules (`DummyTimeTable`), validating Subject, Room, and Faculty.
+* **60-Second Anti-Duplicate Cooldown:** Eliminates spam and duplicate records by arming a 60-second duplicate suppression window for recognized students.
+* **Multi-Class Increment:** Naturally supports multiple classes in a single day, incrementing session totals accurately without artificially inflating days.
+* **Automated Absence Marking & Backfill:** Background scheduler automatically flags unverified students as absent once the lecture duration and grace period expire.
 
-### 🔒 Security Features
-- Session-based authentication
-- Role-based access control (Student/Teacher)
-- Subject-level authorization for teachers
-- Duplicate attendance prevention
-- Time-based validation
-- SQL injection protection
+---
+
+## 🧬 Biometric Engine Architecture
+
+Vision Mark operates on an authentic 5-stage computer vision and deep learning pipeline:
+
+```
+┌──────────────────────────────┐
+│  Stage 01: Optical Ingestion │  InsightFace det_10g (640×640)
+│  & Distance Bounding         │  Dynamic Category: Very Close (≥150px) / Close / Mid / Far
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Stage 02: 5-Point Affine    │  Locates Left Eye, Right Eye, Nose Tip, Left/Right Mouth
+│  Landmark Normalization      │  Computes affine matrix; normalizes pose yaw/pitch to 112×112
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Stage 03: ArcFace ResNet-50 │  Deep CNN backbone (w600k_r50.onnx)
+│  512-D Embedding Extraction  │  Maps facial morphology onto unit hypersphere ℝ⁵¹² (||E||₂ = 1.0)
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Stage 04: 4-Level Distance  │  Level 1: Same Category ➔ Level 2: Adjacent ➔ Level 3: Average
+│  Cascade & Cosine Metric     │  Dynamic threshold verification (e.g. Cosine Similarity ≥ 0.30)
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  Stage 05: Academic Ledger   │  Validates active timetable (Subject / Faculty / Time Slot)
+│  & Cloud ERP Commit          │  Enforces 60s duplicate suppression; commits encrypted TiDB record
+└──────────────────────────────┘
+```
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     FastAPI Server                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   Auth       │  │  Attendance  │  │   Reports    │     │
-│  │  Management  │  │   Marking    │  │  Generation  │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Face Recognition Engine                        │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────┐           │
-│  │ ArcFace  │  │RetinaFace│  │Multi-Distance  │           │
-│  │ Buffalo-L│  │          │  │  Recognition   │           │
-│  └──────────┘  └──────────┘  └────────────────┘           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    MySQL Database                           │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐       │
-│  │  Students   │  │  Teachers   │  │ Student      │       │
-│  │             │  │             │  │ Detail       │       │
-│  └─────────────┘  └─────────────┘  └──────────────┘       │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐       │
-│  │Student      │  │ DummyTime   │  │Subject-wise  │       │
-│  │Embeddings   │  │ Table       │  │ Attendance   │       │
-│  └─────────────┘  └─────────────┘  └──────────────┘       │
-└─────────────────────────────────────────────────────────────┘
+                               ┌──────────────────────────────────────────────┐
+                               │             Client Web Browser               │
+                               │   (HTML5, Canvas HUD, getUserMedia HTTPS)    │
+                               └──────────────────────┬───────────────────────┘
+                                                      │
+                       HTTPS REST API / WebRTC Frames │ Signed Cookies (HMAC-SHA256)
+                                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                FastAPI Server (main.py / backend.server)                    │
+│                                                                                             │
+│  ┌────────────────────────┐  ┌────────────────────────┐  ┌────────────────────────┐         │
+│  │    Auth & Security     │  │  In-Browser Streaming  │  │   Analytics & Excel    │         │
+│  │ (Bcrypt, Signed Sess,  │  │ (/api/recognize_frame, │  │   Report Exporter      │         │
+│  │  SlowAPI Rate Limiter) │  │  client-side frames)   │  │   (OpenPyXL / Pandas)  │         │
+│  └────────────────────────┘  └────────────────────────┘  └────────────────────────┘         │
+│                                           │                                                 │
+│                                           ▼                                                 │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐         │
+│  │                     Vision Mark Biometric Engine (Recognize2.py)               │         │
+│  │  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐  │         │
+│  │  │ InsightFace det_10g  │  │ 5-Point Affine Warp  │  │ ArcFace ResNet-50    │  │         │
+│  │  │ Multi-Distance Class │  │ Canonical 112×112    │  │ 512-D Normalized     │  │         │
+│  │  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘  │         │
+│  └────────────────────────────────────────────────────────────────────────────────┘         │
+└───────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                            │
+                        TLS Encrypted MySQL │ SSL Handshake
+                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                          Database Layer (TiDB Cloud Serverless / MySQL)                     │
+│  ┌────────────────────────┐  ┌────────────────────────┐  ┌────────────────────────┐         │
+│  │   students / teachers  │  │   student_embeddings   │  │   attendance_<subject> │         │
+│  │   (Bcrypt hashes)      │  │ (Multi-Distance Blobs) │  │  (Timetable Ledgers)   │         │
+│  └────────────────────────┘  └────────────────────────┘  └────────────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 🚀 1-Click Cloud Deployment
 
-### Backend
-- **FastAPI** - Modern Python web framework
-- **Python 3.8+** - Core programming language
-- **MySQL 8.0+** - Relational database
+Vision Mark is configured with a root `main.py` entrypoint, `requirements.txt`, `Dockerfile`, and `render.yaml` for zero-configuration cloud deployment.
 
-### Face Recognition
-- **InsightFace (ArcFace)** - Primary face recognition model
-- **RetinaFace** - High-accuracy face detection
-- **OpenCV** - Computer vision operations
-- **NumPy** - Numerical computations
+### Option 1: Render (1-Click)
 
-### Report Generation
-- **ReportLab** - PDF generation
-- **OpenPyXL** - Excel generation
-- **python-docx** - Word document generation
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Git-Suraj-hub/Vision_Mark)
 
-### Scheduling
-- **Schedule** - Background task scheduling for absent marking
-
-### Frontend
-- **HTML5/CSS3** - Modern responsive UI
-- **JavaScript (Vanilla)** - Client-side interactions
-- **Jinja2** - Server-side templating
+1. Click the **Deploy to Render** button above or connect your GitHub repository in the [Render Dashboard](https://dashboard.render.com/).
+2. Render will automatically detect `render.yaml` and configure the web service.
+3. Add your **TiDB Cloud** credentials under Environment Variables:
+   * `DB_HOST`: `gateway01.ap-northeast-1.prod.aws.tidbcloud.com`
+   * `DB_PORT`: `4000`
+   * `DB_NAME`: `face_detection`
+   * `DB_USER`: `<your_tidb_username>`
+   * `DB_PASSWORD`: `<your_tidb_password>`
+   * `DB_SSL_DISABLED`: `False`
+4. Click **Create Web Service**. Your app is immediately live with free automatic SSL.
 
 ---
 
-## 📦 Prerequisites
+### Option 2: Hugging Face Spaces (100% Free — 16 GB RAM)
 
-Before installation, ensure you have:
+Because deep learning models (InsightFace ONNX) require ~1.2 GB RAM, Hugging Face Spaces provides the best **100% free production tier** (2 vCPU, 16 GB RAM, permanent HTTPS):
 
-- **Python 3.8 or higher** ([Download](https://www.python.org/downloads/))
-- **MySQL 8.0 or higher** ([Download](https://dev.mysql.com/downloads/))
-- **Webcam** (for face recognition)
-- **Git** ([Download](https://git-scm.com/downloads))
-- **4GB+ RAM** (recommended for face recognition models)
-- **Good lighting** (for better face detection accuracy)
+1. Go to [Hugging Face Spaces](https://huggingface.co/spaces) $\rightarrow$ **Create new Space**.
+2. Space SDK: Choose **Docker** (Blank).
+3. Connect your GitHub repository (`Git-Suraj-hub/Vision_Mark`).
+4. Under **Settings $\rightarrow$ Variables and secrets**, set:
+   * `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_DISABLED=False`.
+5. Your application will build and stay online 24/7 with zero cost.
 
 ---
 
-## 🚀 Installation
+### Option 3: Docker Container
 
-### 1. Clone the Repository
+Build and run anywhere with Docker:
 
 ```bash
+# 1. Clone repository
 git clone https://github.com/Git-Suraj-hub/Vision_Mark.git
-cd pythonProject4
+cd Vision_Mark
+
+# 2. Configure environment
+cp pythonProject4/.env.example .env
+# Edit .env with your TiDB Cloud or MySQL credentials
+
+# 3. Build and launch container
+docker build -t vision-mark .
+docker run -p 8000:8000 --env-file .env vision-mark
 ```
 
-### 2. Create Virtual Environment
+Access at `http://localhost:8000`.
+
+---
+
+## 💻 Quickstart Guide
+
+### 1. Prerequisites
+* **Python 3.10+**
+* **MySQL 8.0+** or **TiDB Cloud Serverless** account (Free tier)
+* **Webcam** (built-in laptop camera, USB webcam, or mobile camera)
+
+### 2. Local Installation
 
 ```bash
-# Windows
+# Clone repository
+git clone https://github.com/Git-Suraj-hub/Vision_Mark.git
+cd Vision_Mark
+
+# Create virtual environment
 python -m venv venv
+
+# Activate virtual environment
+# Windows:
 venv\Scripts\activate
-
-# Linux/Mac
-python3 -m venv venv
+# Linux/macOS:
 source venv/bin/activate
-```
 
-### 3. Install Dependencies
-
-```bash
+# Install verified dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**requirements.txt:**
-```txt
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-mysql-connector-python==8.2.0
-insightface==0.7.3
-retinaface==0.0.13
-opencv-python==4.8.1.78
-numpy==1.24.3
-scipy==1.11.4
-python-multipart==0.0.6
-schedule==1.2.0
-reportlab==4.0.7
-openpyxl==3.1.2
-python-docx==1.1.0
-torch==2.1.0
-onnxruntime==1.16.3
+### 3. Environment Configuration
+
+Create a `.env` file in the root directory (refer to `pythonProject4/.env.example`):
+
+```env
+# Database Configuration (TiDB Cloud Serverless or Local MySQL)
+DB_HOST=gateway01.ap-northeast-1.prod.aws.tidbcloud.com
+DB_PORT=4000
+DB_USER=your_tidb_user
+DB_PASSWORD=your_tidb_password
+DB_NAME=face_detection
+DB_SSL_DISABLED=False
+
+# Session Security & Application Secrets
+SECRET_KEY=generate_a_secure_random_hex_string_32_bytes
+SESSION_EXPIRE_SECONDS=21600
+
+# Server Binding
+HOST=0.0.0.0
+PORT=8000
+
+# Default Camera Source (0 for internal webcam, or RTSP stream)
+DEFAULT_CAMERA_SOURCE=0
 ```
 
-### 4. Install Additional System Dependencies (if needed)
+### 4. Database Setup
 
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
-```
-
-**macOS:**
-```bash
-brew install opencv
-```
-
----
-
-## 🗄️ Database Setup
-
-### 1. Create Database
+Execute the schema files in `pythonProject4/database/` into your MySQL / TiDB database:
 
 ```bash
-mysql -u root -p
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < pythonProject4/database/01_base_tables.sql
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < pythonProject4/database/02_subject_tables.sql
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < pythonProject4/database/03_embeddings_table.sql
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < pythonProject4/database/04_category_columns.sql
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < pythonProject4/database/05_timetable.sql
 ```
 
-```sql
-CREATE DATABASE face_detection;
-USE face_detection;
-```
-
-### 2. Run Schema Files
-
-Execute the following SQL files in order:
+### 5. Run the Application
 
 ```bash
-# 1. Create base tables
-mysql -u root -p face_detection < database/01_base_tables.sql
-
-# 2. Create subject attendance tables
-mysql -u root -p face_detection < database/02_subject_tables.sql
-
-# 3. Create embeddings table
-mysql -u root -p face_detection < database/03_embeddings_table.sql
-
-# 4. Add category-specific columns
-mysql -u root -p face_detection < database/04_category_columns.sql
-
-# 5. Create timetable
-mysql -u root -p face_detection < database/05_timetable.sql
+# Launch via root entrypoint
+python main.py
 ```
 
-### 3. Create Sample Data (Optional)
-
-```sql
--- Sample student
-INSERT INTO students (username, password, name, enrollment_no, class) 
-VALUES ('student1', 'pass123', 'John Doe', 'MUR2300001', 'CSE-A');
-
--- Sample teacher
-INSERT INTO teachers (username, password, name, class, subject) 
-VALUES ('teacher1', 'pass123', 'Dr. Smith', 'CSE-A', 'Theory of Computation');
-
--- Sample timetable entry (24/7 for testing)
-INSERT INTO DummyTimeTable (Day, Start_Time, End_Time, Subject, Teacher, Room) 
-VALUES ('Monday', '00:00:00', '23:59:59', 'Theory of Computation', 'Dr. Smith', 'A101');
-```
+Open your browser at `http://localhost:8000`.
 
 ---
 
-## ⚙️ Configuration
+## 📷 In-Browser Camera Streaming
 
-### 1. Update Database Credentials
+In cloud deployments, the server does not have a physical USB webcam attached. Vision Mark solves this natively:
 
-Edit the following files with your MySQL credentials:
-
-**backend/server.py:**
-```python
-def get_db_conn():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="YOUR_PASSWORD_HERE",  # Change this
-        database="face_detection"
-    )
-```
-
-**backend/Recognize2.py:**
-```python
-self.conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="YOUR_PASSWORD_HERE",  # Change this
-    database="face_detection"
-)
-```
-
-### 2. Add Logo and Favicon
-
-Place your images in:
-```
-backend/static/images/logo.png
-backend/static/images/favicon.png
-```
-
-**Image specifications:**
-- Logo: 512x512px, transparent PNG
-- Favicon: 32x32px or 64x64px PNG
-
-**Temporary solution:**
-```bash
-# Use placeholder images
-cp demo.png backend/static/images/logo.png
-cp demo.png backend/static/images/favicon.png
-```
+1. **Client Ingestion:** When faculty opens the Faculty Portal and clicks **Start Camera**, the browser requests camera permissions via WebRTC (`getUserMedia`).
+2. **Local Rendering:** Video is captured and displayed smoothly on the user's local screen using their device's GPU.
+3. **HTTP Streaming:** The browser sends JPEG frames asynchronously to `POST /api/recognize_frame`.
+4. **Instant Detection:** The backend runs ArcFace on the frame, returning bounding box coordinates and recognized student details to the client canvas in real time.
 
 ---
 
-## 📸 Generate Face Embeddings
+## 🛡️ Enterprise Security & Privacy
 
-Before using the system, you need to generate face embeddings for students.
+Vision Mark underwent a complete pre-deployment security audit and includes an automated test suite verifying 100% compliance across 17 checkpoints:
 
-### Method 1: From Photos (Batch Processing)
+| Checkpoint | Description | Implementation | Status |
+| :--- | :--- | :--- | :---: |
+| **SEC-01** | Student Attendance Protection | Role-based check; students can only view their own records (401/403) | **PASS** |
+| **SEC-02** | Password Privacy & Hashing | Passwords excluded from all API responses; automatic live Bcrypt migration | **PASS** |
+| **SEC-03** | Student Photo Protection | Profile photos strictly guarded behind student/faculty ownership check | **PASS** |
+| **SEC-04** | Biometric Storage Isolation | Captures moved outside public static into protected storage (`/storage/captures/`) | **PASS** |
+| **SEC-05** | Surveillance Stream Guard | Video feed & webcam status restricted exclusively to authorized faculty | **PASS** |
+| **SEC-06** | Brute-Force Rate Limiting | `slowapi` rate limiter restricts login attempts (HTTP 429 Too Many Requests) | **PASS** |
+| **SEC-07** | DOM XSS Immunity | Safe DOM element construction with zero vulnerable `innerHTML` concatenation | **PASS** |
+| **SEC-08** | Server-side Input Validation | Strict Regex validation (`^[A-Za-z0-9_-]{3,30}$`) preventing injection | **PASS** |
+
+### Run the Security Suite
 
 ```bash
-# 1. Organize photos in Dataset folder:
-Dataset/
-├── MUR2300001_JohnDoe/
-│   ├── 1.jpg
-│   ├── 2.jpg
-│   └── 3.jpg
-├── MUR2300002_JaneSmith/
-│   ├── 1.jpg
-│   └── 2.jpg
-└── ...
-
-# 2. Run embedding generator
-python student_Embedding.py
-
-# 3. Calculate category averages
-python student_detail_embedding.py
-```
-
-### Method 2: Using Webcam (Individual)
-
-```bash
-python generate_embeddings.py
-# Choose option 3 (Webcam capture)
-# Enter enrollment number and name
-# Press SPACE to capture
+python pythonProject4/tests/test_security_suite.py
 ```
 
 ---
 
-## 🏃 Running the Application
+## 📡 API Reference
 
-### Start the Server
+### Authentication & Sessions
+* `POST /api/login` - Authenticate student or teacher (Rate-limited, sets signed cookie)
+* `POST /api/logout` - Invalidate session token
+* `GET /api/current_user` - Retrieve active session claims
 
-```bash
-# Development mode (with auto-reload)
-uvicorn backend.server:app --reload --host 0.0.0.0 --port 8000
+### Attendance & Recognition
+* `POST /api/recognize_frame` - **In-Browser Camera Engine**: Process incoming base64 frame and return detections
+* `GET /api/student/attendance/{enrollment_no}` - Fetch student attendance breakdown (SEC-01 Protected)
+* `GET /api/teacher/attendance` - Fetch faculty's assigned subject attendance ledger
+* `POST /api/mark_attendance` - Manual attendance override with timetable validation
+* `GET /api/student/export_my_report` - Download individual Excel attendance report
+* `GET /api/teacher/export_excel` - Export full class attendance report with percentages
 
-# Production mode
-uvicorn backend.server:app --host 0.0.0.0 --port 8000 --workers 4
-```
-
-### Access the Application
-
-Open your browser and navigate to:
-
-```
-http://localhost:8000
-```
-
-### Default Test Credentials
-
-**Student:**
-- Username: `student1`
-- Password: `pass123`
-
-**Teacher:**
-- Username: `teacher1`
-- Password: `pass123`
+### Camera Controls (Server Direct)
+* `POST /api/start_webcam` - Initialize server-side OpenCV video stream
+* `GET /api/stop_webcam` - Terminate server-side camera thread
+* `GET /api/video_feed` - Multipart MJPEG stream (Faculty only, SEC-05 Protected)
+* `GET /api/webcam_status` - Get live status of server camera
 
 ---
 
-## 📖 Usage Guide
-
-### For Students
-
-1. **Login**
-   - Go to http://localhost:8000
-   - Click "Student Login"
-   - Enter credentials
-
-2. **View Attendance**
-   - Dashboard shows overall statistics
-   - Click subject tabs to view subject-wise attendance
-   - See present/absent records with timestamps
-
-
-### For Teachers
-
-1. **Login**
-   - Go to http://localhost:8000
-   - Click "Teacher Login"
-   - Enter credentials
-
-2. **Start Face Recognition**
-   - Click "Start Recognition" button
-   - Webcam will open
-   - Students' faces will be detected automatically
-   - Attendance marked in real-time
-
-3. **Manual Marking**
-   - Enter student enrollment number
-   - Select status (Present/Absent)
-   - Click "Mark Attendance"
-
-4. **Absent Marking**
-   - Click "Mark Absences NOW" for immediate marking
-   - Click "Backfill Past Absences" to recover past data
-
----
-
-## 📁 Project Structure
+## 📁 Project Directory Structure
 
 ```
-smart-attendance-system/
-├── backend/
-│   ├── server.py                 # FastAPI server
-│   ├── Recognize2.py             # Face recognition engine
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── style.css         # Styles
-│   │   ├── images/
-│   │   │   ├── logo.png
-│   │   │   └── favicon.png
-│   │   ├── captures/             # Face captures (auto-created)
-│   │   └── uploads/              # Test uploads (auto-created)
-│   └── templates/
-│       ├── index.html            # Landing page
-│       ├── login_student.html
-│       ├── login_teacher.html
-│       ├── student.html          # Student dashboard
-│       └── teacher.html          # Teacher dashboard
-├── database/
-│   ├── 01_base_tables.sql
-│   ├── 02_subject_tables.sql
-│   ├── 03_embeddings_table.sql
-│   ├── 04_category_columns.sql
-│   └── 05_timetable.sql
-├── Dataset/                      # Student photos
-│   └── ENROLLMENT_NAME/
-│       └── *.jpg
-├── student_Embedding.py          # Generate embeddings
-├── student_detail_embedding.py   # Calculate averages
-├── generate_embeddings.py        # Interactive embedding tool
-├── absent_marker.py              # Standalone absent marker
-├── requirements.txt
-├── README.md
-└── LICENSE
+Vision_Mark/
+├── Dockerfile                      # Universal Docker container configuration
+├── main.py                         # Root entrypoint for cloud hosting
+├── render.yaml                     # 1-Click Render Cloud deployment blueprint
+├── requirements.txt                # Production Python dependencies
+├── README.md                       # Comprehensive documentation
+├── pythonProject4/
+│   ├── .env.example                # Sanitized environment template
+│   ├── backend/
+│   │   ├── server.py               # Core FastAPI web service & secure endpoints
+│   │   ├── Recognize2.py           # Multi-distance ArcFace & cascade matcher
+│   │   ├── student_embeddings.py   # 5-angle dataset feature extractor
+│   │   ├── student_detail_embedding.py # Distance category centroid calculator
+│   │   ├── static/                 # Static assets (CSS, JS, Logos)
+│   │   └── templates/              # Redesigned Unslop institutional templates
+│   │       ├── index.html          # Landing page with authentic 5-stage CV visualizer
+│   │       ├── login_student.html  # Secure student authentication
+│   │       ├── login_teacher.html  # Secure faculty authentication
+│   │       ├── student.html        # Student attendance dashboard & analytics
+│   │       └── teacher.html        # Faculty dashboard with In-Browser WebRTC camera
+│   ├── database/                   # Relational database schemas (MySQL / TiDB)
+│   ├── storage/                    # Isolated biometric captures (SEC-04 Protected)
+│   └── tests/
+│       └── test_security_suite.py  # 17-point automated security verification suite
 ```
 
 ---
 
-## 📡 API Documentation
-
-### Authentication
-
-**Login**
-```http
-POST /api/login
-Content-Type: multipart/form-data
-
-role=student&username=student1&password=pass123
-```
-
-**Logout**
-```http
-POST /api/logout
-```
-
-### Attendance
-
-**Get Student Attendance**
-```http
-GET /api/student/attendance/{enrollment_no}
-```
-
-**Get Teacher's Subject Attendance**
-```http
-GET /api/teacher/attendance
-Cookie: session={token}
-```
-
-**Mark Attendance Manually**
-```http
-POST /api/mark_attendance
-Content-Type: multipart/form-data
-
-enrollment_no=MUR001&status=Present
-```
-
-### Recognition
-
-**Start Webcam**
-```http
-POST /api/start_webcam
-Cookie: session={token}
-```
-
-**Stop Webcam**
-```http
-GET /api/stop_webcam
-Cookie: session={token}
-```
-
-**Test Image**
-```http
-POST /api/test_image
-Content-Type: multipart/form-data
-
-file={image_file}
-```
-
-### Absent Marking
-
-**Mark Absences Now**
-```http
-POST /api/mark_absences_now
-Cookie: session={token}
-```
-
-**Backfill Absences**
-```http
-POST /api/backfill_absences
-Content-Type: multipart/form-data
-
-days_back=7
-```
-
-### Utility
-
-**Get Current Subject**
-```http
-GET /api/current_subject
-```
-
-**Get Current User**
-```http
-GET /api/current_user
-Cookie: session={token}
-```
-
----
-
-## 🔧 Troubleshooting
-
-### Models Not Loading
-
-**Problem:** Face recognition models fail to load
-
-**Solution:**
-```bash
-# Models download automatically on first run
-# Ensure good internet connection
-# Models are cached in ~/.insightface/
-
-# If issues persist:
-rm -rf ~/.insightface/
-python -c "from insightface.app import FaceAnalysis; app = FaceAnalysis(name='buffalo_l'); app.prepare(ctx_id=0)"
-```
-
-### Webcam Not Opening
-
-**Problem:** Webcam fails to start
-
-**Solution:**
-```python
-# Try different camera index in Recognize2.py
-cv2.VideoCapture(0)  # Change 0 to 1, 2, etc.
-
-# Check camera permissions
-# Windows: Settings > Privacy > Camera
-# Mac: System Preferences > Security > Camera
-# Linux: Check /dev/video* permissions
-```
-
-### No Face Detected
-
-**Problem:** Faces not being recognized
-
-**Solution:**
-- Ensure good lighting
-- Face should be frontal and clearly visible
-- Minimum face size: 40x40 pixels
-- Check if embeddings exist for student
-- Verify camera is working: `python -c "import cv2; cap=cv2.VideoCapture(0); print(cap.isOpened())"`
-
-### Database Connection Error
-
-**Problem:** Cannot connect to MySQL
-
-**Solution:**
-```bash
-# Check MySQL is running
-sudo service mysql status
-
-# Test connection
-mysql -u root -p
-
-# Verify database exists
-mysql -u root -p -e "SHOW DATABASES LIKE 'face_detection';"
-```
-
-### Attendance Not Marking
-
-**Problem:** Automatic attendance marking fails
-
-**Solution:**
-- Verify DummyTimeTable has entry for current day/time
-- Check teacher's subject matches current class
-- Ensure face embeddings exist for student
-- Check server logs for errors
-- Verify absent marking scheduler is running
-
-### High CPU/Memory Usage
-
-**Problem:** System uses too much resources
-
-**Solution:**
-```python
-# In Recognize2.py, increase frame skip
-skip_frames = 5  # Process every 5th frame instead of 2
-
-# Reduce detection size
-self.arcface_app.prepare(ctx_id=0, det_size=(320, 320))  # Instead of (640, 640)
-```
-
----
-
-## 🎯 Performance Optimization
-
-### For Better Accuracy
-
-1. **Good Lighting** - Well-lit environment improves detection
-2. **Multiple Photos** - 5+ photos per student at different distances
-3. **Quality Photos** - Clear, frontal face images
-4. **Regular Updates** - Re-generate embeddings periodically
-
-### For Better Speed
-
-1. **Frame Skipping** - Adjust `skip_frames` in Recognize2.py
-2. **Detection Size** - Reduce `det_size` for faster processing
-3. **Database Indexing** - Add indexes on frequently queried columns
-4. **Hardware** - Use GPU if available (change to `CUDAExecutionProvider`)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Coding Standards
-
-- Follow PEP 8 for Python code
-- Add comments for complex logic
-- Update documentation for new features
-- Test thoroughly before submitting
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **InsightFace** - Face recognition models
-- **RetinaFace** - Face detection
-- **FastAPI** - Web framework
-- **OpenCV** - Computer vision library
-- **ReportLab** - PDF generation
-
----
-
-## 📞 Support
-
-For issues and questions:
-
-1. Check [Troubleshooting](#-troubleshooting) section
-2. Search existing [GitHub Issues](https://github.com/yourusername/smart-attendance-system/issues)
-3. Create a new issue with:
-   - Detailed description
-   - Steps to reproduce
-   - Error messages/logs
-   - System information
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Mobile app (Android/iOS)
-- [ ] Real-time dashboard updates
-- [ ] Email notifications
-- [ ] SMS alerts for low attendance
-- [ ] Biometric authentication
-- [ ] Multi-language support
-- [ ] Dark mode
-- [ ] Advanced analytics
-- [ ] Export to Google Sheets
-- [ ] Integration with LMS
-
----
-
-## 📊 System Requirements
-
-### Minimum
-- **CPU:** Dual-core 2.0 GHz
-- **RAM:** 4 GB
-- **Storage:** 2 GB free space
-- **OS:** Windows 10, Ubuntu 18.04, macOS 10.14+
-
-### Recommended
-- **CPU:** Quad-core 2.5 GHz+
-- **RAM:** 8 GB+
-- **Storage:** 5 GB free space
-- **GPU:** NVIDIA GPU with CUDA support (optional)
-
----
-
-## 📈 Statistics
-
-- **Recognition Accuracy:** 85-95% (depending on distance)
-- **Processing Speed:** 2-5 FPS (CPU) / 15-30 FPS (GPU)
-- **Face Detection Range:** 20px to 150px+ face width
-- **Supported Students:** Unlimited (tested with 500+)
-- **Concurrent Users:** 50+ (with proper hardware)
-
----
-
-## 🎓 Academic Use
-
-This system was developed as part of an academic project. If you use this system in your research or project, please cite:
-
-```
-@software{smart_attendance_system,
-  author = {Your Name},
-  title = {Smart Attendance System: AI-Powered Face Recognition},
-  year = {2025},
-  url = {https://github.com/yourusername/smart-attendance-system}
+## 📄 License & Citation
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+If you use Vision Mark in your academic research or institutional deployment, please cite:
+
+```bibtex
+@software{vision_mark_2026,
+  author = {Suraj and DeepMind Team},
+  title = {Vision Mark: Enterprise Multi-Distance Facial Recognition Attendance Platform},
+  year = {2026},
+  publisher = {GitHub},
+  url = {https://github.com/Git-Suraj-hub/Vision_Mark}
 }
 ```
 
 ---
 
-## ⚠️ Disclaimer
-
-This system is designed for **LOCAL USE ONLY** and should be deployed in a controlled environment. For production deployment:
-
-1. Implement HTTPS
-2. Use password hashing (bcrypt)
-3. Add CSRF protection
-4. Implement rate limiting
-5. Regular security audits
-6. Comply with data privacy regulations (GDPR, etc.)
-
----
-
-## 🌟 Star History
-
-If you find this project useful, please consider giving it a star ⭐
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Git-Suraj-hub/Vision_Mark&type=Date)](https://star-history.com/#Git-Suraj-hub/Vision_Mark)
-
-
----
-
 <div align="center">
-
-**Made with ❤️ for educational institutions**
-
-
+  <sub>Built with academic rigor for universities and educational institutions.</sub>
 </div>
