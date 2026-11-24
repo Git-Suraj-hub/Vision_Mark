@@ -12,14 +12,38 @@
 
 > A modern, production-ready computer vision attendance platform featuring **multi-distance face recognition**, **in-browser camera streaming**, **hierarchical cascade matching**, and **automated academic ERP ledger enforcement**.
 
-[Explore Features](#-core-features) · [System Architecture](#-biometric-engine-architecture) · [Quickstart](#-quickstart-guide) · [Security & Privacy](#-enterprise-security--privacy)
+[Explore Features](#-core-features) · [UI Showcase](#-user-interface--dashboards) · [System Architecture](#-biometric-engine-architecture) · [Quickstart](#-quickstart-guide) · [Security & Privacy](#-enterprise-security--privacy)
+
+<br/>
+
+<img src="docs/images/01_landing_hero.png" alt="Vision Mark Landing Page" width="900" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
 
 </div>
 
 ---
 
+## 📸 User Interface & Dashboards
+
+| Landing Page & Real-Time CV Pipeline | Faculty Live Attendance Portal |
+| :---: | :---: |
+| <img src="docs/images/02_landing_pipeline.png" width="450" /> | <img src="docs/images/04_teacher_recognition.png" width="450" /> |
+| *Authentic 5-Stage Biometric Computer Vision Pipeline* | *In-Browser Live Camera Stream & Multi-Face Recognition* |
+
+| Student Analytics Dashboard | Biometric 5-Angle Enrollment |
+| :---: | :---: |
+| <img src="docs/images/06_student_dashboard.png" width="450" /> | <img src="docs/images/05_teacher_enrollment.png" width="450" /> |
+| *Real-time attendance rates, streaks, and subject breakdown* | *Multi-angle face registration with automatic embeddings* |
+
+| Institutional Analytics & Overview | Class Attendance Ledger & Excel Export |
+| :---: | :---: |
+| <img src="docs/images/03_teacher_dashboard.png" width="450" /> | <img src="docs/images/07_teacher_reports.png" width="450" /> |
+| *Daily metrics, attendance rate trends, and subject health* | *Complete institutional ledger with single-click Excel export* |
+
+---
+
 ## 📋 Table of Contents
 
+- [User Interface & Dashboards](#-user-interface--dashboards)
 - [Core Features](#-core-features)
 - [Biometric Engine Architecture](#-biometric-engine-architecture)
 - [System Architecture](#-system-architecture)
@@ -278,6 +302,7 @@ python pythonProject4/tests/test_security_suite.py
 
 ```
 Vision_Mark/
+├── docs/images/                    # High-resolution UI screenshots & architecture assets
 ├── requirements.txt                # Production Python dependencies
 ├── README.md                       # Comprehensive documentation
 ├── pythonProject4/
