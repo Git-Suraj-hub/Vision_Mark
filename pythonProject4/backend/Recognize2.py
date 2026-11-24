@@ -42,9 +42,10 @@ class AdvancedFaceRecognition:
         self.running = False
         self.on_recognize = self.mark_attendance
 
-        # Initialize ArcFace
-        print("[INFO] Loading ArcFace model...")
-        self.arcface_app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
+        # Initialize ArcFace (High-accuracy buffalo_l ResNet-50: detection + recognition)
+        print("[INFO] Loading ArcFace model (buffalo_l ResNet-50)...")
+        model_name = os.getenv("INSIGHTFACE_MODEL", "buffalo_l")
+        self.arcface_app = FaceAnalysis(name=model_name, providers=['CPUExecutionProvider'], allowed_modules=['detection', 'recognition'])
         self.arcface_app.prepare(ctx_id=0, det_size=(640, 640))
 
         if HAS_RETINA_FACE:
