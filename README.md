@@ -16,9 +16,7 @@
 
 <br/>
 
-<img src="docs/images/01_landing_hero.png" alt="Vision Mark Landing Page" width="900" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
 
-</div>
 
 ---
 
@@ -29,9 +27,7 @@
 | <img src="docs/images/02_landing_pipeline.png" width="450" /> | <img src="docs/images/04_teacher_recognition.png" width="450" /> |
 | *Authentic 5-Stage Biometric Computer Vision Pipeline* | *In-Browser Live Camera Stream & Multi-Face Recognition* |
 
-| Student Analytics Dashboard | Biometric 5-Angle Enrollment |
-| :---: | :---: |
-| <img src="docs/images/06_student_dashboard.png" width="450" /> | <img src="docs/images/05_teacher_enrollment.png" width="450" /> |
+ | <img src="docs/images/05_teacher_enrollment.png" width="450" /> |
 | *Real-time attendance rates, streaks, and subject breakdown* | *Multi-angle face registration with automatic embeddings* |
 
 | Institutional Analytics & Overview | Class Attendance Ledger & Excel Export |
