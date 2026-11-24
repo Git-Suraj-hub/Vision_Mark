@@ -3,8 +3,12 @@ import cv2
 import numpy as np
 import mysql.connector
 from insightface.app import FaceAnalysis
-from retinaface import RetinaFace
-import torch
+try:
+    from retinaface import RetinaFace
+    HAS_RETINA_FACE = True
+except Exception:
+    RetinaFace = None
+    HAS_RETINA_FACE = False
 import time
 from scipy.spatial.distance import cosine
 from datetime import datetime
@@ -43,7 +47,10 @@ class AdvancedFaceRecognition:
         self.arcface_app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
         self.arcface_app.prepare(ctx_id=0, det_size=(640, 640))
 
-        print("[INFO] RetinaFace will be loaded when needed...")
+        if HAS_RETINA_FACE:
+            print("[INFO] RetinaFace will be loaded when needed...")
+        else:
+            print("[INFO] Using InsightFace det_10g (native RetinaFace ONNX) for all distances.")
 
         # Load embeddings with multi-distance support
         self.load_known_faces_multi_distance()
@@ -321,7 +328,9 @@ class AdvancedFaceRecognition:
         return enhanced
 
     def detect_faces_very_close(self, img):
-        """Very close detection using RetinaFace"""
+        """Very close detection using RetinaFace (with ArcFace fallback)"""
+        if not HAS_RETINA_FACE or RetinaFace is None:
+            return self.detect_faces_arcface(img, "ArcFace (Very Close)")
         try:
             faces = RetinaFace.detect_faces(img, threshold=0.5)
             detected_faces = []
