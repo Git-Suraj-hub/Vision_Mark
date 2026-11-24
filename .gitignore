@@ -55,6 +55,8 @@ pythonProject4/backend/static/images/classroom_feed_*
 *.bundle
 
 # Temporary Scratch Scripts & Verification Artifacts
+tools/
+*.exe
 *.original.*
 pythonProject4/**/*.original.*
 scratch_*
