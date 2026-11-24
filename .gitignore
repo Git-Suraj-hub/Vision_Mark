@@ -39,6 +39,8 @@ venv.bak/
 pythonProject4/.env
 pythonProject4/.env.local
 pythonProject4/*.env
+!.env.example
+!pythonProject4/.env.example
 
 # Biometric Training Datasets & Live Captures (Privacy Protection)
 pythonProject4/Dataset/
@@ -47,9 +49,14 @@ pythonProject4/backend/static/captures/
 captures/
 storage/
 pythonProject4/storage/
+pythonProject4/backend/static/images/demo/
+pythonProject4/backend/static/images/demo_*
+pythonProject4/backend/static/images/classroom_feed_*
 *.bundle
 
 # Temporary Scratch Scripts & Verification Artifacts
+*.original.*
+pythonProject4/**/*.original.*
 scratch_*
 pythonProject4/scratch_*
 original_screenshots/

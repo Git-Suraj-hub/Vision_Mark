@@ -1,0 +1,19 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+
+# Secrets & Environment variables
+.env
+.env.local
+.env.*
+*.env
+!.env.example
+
+# Biometric Captures & Datasets
+Dataset/
+backend/static/captures/
+backend/static/uploads/
+
+# Scratch & Logs
+scratch_*
+*.log
